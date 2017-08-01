@@ -4,23 +4,22 @@ namespace MetaNN
 {
 namespace NSInterpolate
 {
+namespace NSCaseGen
+{
 template <typename TOperHandle1, typename TOperHandle2, typename TOperHandle3,
-          typename TDevice>
+          typename TElem, typename TDevice>
 class EvalUnit;
 
-template <typename TOperHandle1, typename TOperHandle2, typename TOperHandle3>
-class EvalUnit<TOperHandle1, TOperHandle2, TOperHandle3, DeviceTags::CPU>
+template <typename TOperHandle1, typename TOperHandle2, typename TOperHandle3, typename TElem>
+class EvalUnit<TOperHandle1, TOperHandle2, TOperHandle3, TElem, DeviceTags::CPU>
     : public BaseEvalUnit<DeviceTags::CPU>
 {
-    using TOperandData = std::decay_t<decltype(std::declval<TOperHandle1>().Data())>;
 public:
-    using ElementType = typename TOperandData::ElementType;
-    using DeviceType = typename TOperandData::DeviceType;
-    static_assert(std::is_same<DeviceType, DeviceTags::CPU>::value,
-                  "Device type mismatch");
+    using ElementType = TElem;
+    using DeviceType = DeviceTags::CPU;
 
     EvalUnit(TOperHandle1 oper1, TOperHandle2 oper2, TOperHandle3 oper3,
-             EvalHandle<Matrix<ElementType, DeviceType>> evalOutput)
+             EvalHandle<Matrix<TElem, DeviceTags::CPU>> evalOutput)
         : m_oper1(std::move(oper1))
         , m_oper2(std::move(oper2))
         , m_oper3(std::move(oper3))
@@ -57,7 +56,7 @@ public:
         assert(p_v3.ColNum() == colNum);
         
         m_evalOutput.Allocate(rowNum, colNum);
-        auto& res = m_evalOutput.Data();
+        auto& res = m_evalOutput.MutableData();
 
         auto mem_v1 = LowerAccess(p_v1);
         auto mem_v2 = LowerAccess(p_v2);
@@ -69,10 +68,11 @@ public:
         const size_t src3PackNum = mem_v3.RowLen();
         const size_t tgtPackNum = mem_res.RowLen();
 
-        const ElementType* r1 = mem_v1.RawMemory();
-        const ElementType* r2 = mem_v2.RawMemory();
-        const ElementType* r3 = mem_v3.RawMemory();
-        ElementType* r = mem_res.MutableRawMemory();
+        using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
+        const StorageType* r1 = mem_v1.RawMemory();
+        const StorageType* r2 = mem_v2.RawMemory();
+        const StorageType* r3 = mem_v3.RawMemory();
+        StorageType* r = mem_res.MutableRawMemory();
 
         for (size_t i = 0; i < rowNum; ++i)
         {
@@ -85,13 +85,14 @@ public:
             r3 += src3PackNum;
             r += tgtPackNum;
         }
+        m_evalOutput.SetEval();
     }
 
 private:
     TOperHandle1 m_oper1;
     TOperHandle2 m_oper2;
     TOperHandle3 m_oper3;
-    EvalHandle<Matrix<ElementType, DeviceTags::CPU>> m_evalOutput;
+    EvalHandle<Matrix<TElem, DeviceTags::CPU>> m_evalOutput;
 };
 
 struct Calculator
@@ -104,14 +105,14 @@ struct Calculator
         static_assert(std::is_same<TCaseTail, OperSeqContainer<>>::value,
                       "General Case is not the last one");
                       
-        using RawEvalRes = typename TEvalRes::DataType;
-        using DeviceType = typename RawEvalRes::DeviceType;
+        using ElementType = typename TEvalRes::DataType::ElementType;
+        using DeviceType = typename TEvalRes::DataType::DeviceType;
 
         auto handle1 = oper1.EvalRegister();
         auto handle2 = oper2.EvalRegister();
         auto handle3 = oper3.EvalRegister();
         using UnitType = EvalUnit<decltype(handle1), decltype(handle2), 
-                                                 decltype(handle3), DeviceType>;
+                                  decltype(handle3), ElementType, DeviceType>;
         using GroupType = TrivalEvalGroup<UnitType>;
 
         auto outHandle = evalRes.Handle();
@@ -121,11 +122,12 @@ struct Calculator
     }
 };
 }
+}
 
 template <>
 struct OperBuildInSeq_<TernaryOpTags::Interpolate>
 {
-    using type = OperSeqContainer<NSInterpolate::Calculator>;
+    using type = OperSeqContainer<NSInterpolate::NSCaseGen::Calculator>;
 };
 
 template <typename TP1, typename TP2, typename TP3>
@@ -133,9 +135,9 @@ struct OperInterpolate_
 {
 // valid check
 private:
-    using rawM1 = std::decay_t<TP1>;
-    using rawM2 = std::decay_t<TP2>;
-    using rawM3 = std::decay_t<TP3>;
+    using rawM1 = RemConstRef<TP1>;
+    using rawM2 = RemConstRef<TP2>;
+    using rawM3 = RemConstRef<TP3>;
 
 public:
     static constexpr bool valid = (IsMatrix<rawM1> && IsMatrix<rawM2> && IsMatrix<rawM3>);
@@ -147,15 +149,15 @@ public:
               std::enable_if_t<std::is_same<CategoryTags::Matrix, T3>::value>* = nullptr>
     static auto Eval(TP1&& p_m1, TP2&& p_m2, TP3&& p_m3)
     {
-        static_assert(std::is_same<typename rawM1::DeviceType, typename rawM2::DeviceType>::value,
-                      "Matrices with different compute types cannot interpolate directly");
         static_assert(std::is_same<typename rawM1::ElementType, typename rawM2::ElementType>::value,
                       "Matrices with different element types cannot interpolate directly");
-
-        static_assert(std::is_same<typename rawM1::DeviceType, typename rawM3::DeviceType>::value,
-                      "Matrices with different compute types cannot interpolate directly");
+        static_assert(std::is_same<typename rawM1::DeviceType, typename rawM2::DeviceType>::value,
+                      "Matrices with different device types cannot interpolate directly");
+                      
         static_assert(std::is_same<typename rawM1::ElementType, typename rawM3::ElementType>::value,
                       "Matrices with different element types cannot interpolate directly");
+        static_assert(std::is_same<typename rawM1::DeviceType, typename rawM3::DeviceType>::value,
+                      "Matrices with different device types cannot interpolate directly");
 
         using ResType = TernaryOp<TernaryOpTags::Interpolate, rawM1, rawM2, rawM3>;
         return ResType(std::forward<TP1>(p_m1), std::forward<TP2>(p_m2), std::forward<TP3>(p_m3));

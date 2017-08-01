@@ -22,20 +22,19 @@ void DataCopy(const Matrix<TElem, DeviceTags::CPU>& src,
     const size_t srcPackNum = mem_src.RowLen();
     const size_t dstPackNum = mem_dst.RowLen();
 
-    const TElem* r1 = mem_src.RawMemory();
-    TElem* r = mem_dst.MutableRawMemory();
+    using StorageType = typename Scalar<TElem, DeviceTags::CPU>::StorageType;
+    const StorageType* r1 = mem_src.RawMemory();
+    StorageType* r = mem_dst.MutableRawMemory();
         
     if ((srcPackNum == colNum) && (dstPackNum == colNum))
     {
-        memcpy(r,
-               r1,
-               sizeof(TElem) * rowNum * colNum);
+        memcpy(r, r1, sizeof(StorageType) * rowNum * colNum);
     }
     else
     {
         for (size_t i = 0; i < rowNum; ++i)
         {
-            memcpy(r, r1, sizeof(TElem) * colNum);
+            memcpy(r, r1, sizeof(StorageType) * colNum);
             dst += dstPackNum;
             src += srcPackNum;
         }

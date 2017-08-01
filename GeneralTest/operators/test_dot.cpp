@@ -56,7 +56,7 @@ void test_dot_1()
             assert(mul2_r(i, j) == mul_r(i, j));
         }
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 }
 

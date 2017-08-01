@@ -2,18 +2,18 @@
 ## Auto Generated makefile by CodeLite IDE
 ## any manual changes will be erased      
 ##
-## Release
+## Debug
 ProjectName            :=MetaNN
-ConfigurationName      :=Release
-WorkspacePath          :=/home/liwei/MetaNN/MetaNN_old
-ProjectPath            :=/home/liwei/MetaNN/MetaNN_old/MetaNN
-IntermediateDirectory  :=./Release
+ConfigurationName      :=Debug
+WorkspacePath          :=/home/liwei/MetaNN/MetaNN_new/MetaNN
+ProjectPath            :=/home/liwei/MetaNN/MetaNN_new/MetaNN/MetaNN
+IntermediateDirectory  :=./Debug
 OutDir                 := $(IntermediateDirectory)
 CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=liwei
-Date                   :=10/07/17
+Date                   :=19/07/17
 CodeLitePath           :=/home/liwei/.codelite
 LinkerName             :=/usr/bin/g++
 SharedObjectLinkerName :=/usr/bin/g++ -shared -fPIC
@@ -50,8 +50,8 @@ LibPath                := $(LibraryPathSwitch).
 AR       := /usr/bin/ar rcu
 CXX      := /usr/bin/g++
 CC       := /usr/bin/gcc
-CXXFLAGS :=   $(Preprocessors)
-CFLAGS   :=   $(Preprocessors)
+CXXFLAGS :=  -g $(Preprocessors)
+CFLAGS   :=  -g $(Preprocessors)
 ASFLAGS  := 
 AS       := /usr/bin/as
 
@@ -74,15 +74,15 @@ $(OutputFile): $(Objects)
 	@$(MakeDirCommand) $(@D)
 	@echo "" > $(IntermediateDirectory)/.d
 	$(AR) $(ArchiveOutputSwitch)$(OutputFile) @$(ObjectsFileList) $(ArLibs)
-	@$(MakeDirCommand) "/home/liwei/MetaNN/MetaNN_old/.build-release"
-	@echo rebuilt > "/home/liwei/MetaNN/MetaNN_old/.build-release/MetaNN"
+	@$(MakeDirCommand) "/home/liwei/MetaNN/MetaNN_new/MetaNN/.build-debug"
+	@echo rebuilt > "/home/liwei/MetaNN/MetaNN_new/MetaNN/.build-debug/MetaNN"
 
 MakeIntermediateDirs:
-	@test -d ./Release || $(MakeDirCommand) ./Release
+	@test -d ./Debug || $(MakeDirCommand) ./Debug
 
 
-./Release:
-	@test -d ./Release || $(MakeDirCommand) ./Release
+./Debug:
+	@test -d ./Debug || $(MakeDirCommand) ./Debug
 
 PreBuild:
 
@@ -96,6 +96,6 @@ PreBuild:
 ## Clean
 ##
 clean:
-	$(RM) -r ./Release/
+	$(RM) -r ./Debug/
 
 

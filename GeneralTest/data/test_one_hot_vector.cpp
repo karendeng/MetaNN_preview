@@ -1,4 +1,5 @@
 #include "test_one_hot_vector.h"
+#include "../facilities/calculate_tags.h"
 #include <iostream>
 #include <cassert>
 #include <MetaNN/meta_nn.h>
@@ -10,13 +11,13 @@ namespace
 void test_one_hot_vector1()
 {
     cout << "Test one-hot vector case 1...\t";
-    static_assert(IsMatrix<OneHotColVector<int, DeviceTags::CPU>>, "Test Error");
-    static_assert(IsMatrix<OneHotColVector<int, DeviceTags::CPU> &>, "Test Error");
-    static_assert(IsMatrix<OneHotColVector<int, DeviceTags::CPU> &&>, "Test Error");
-    static_assert(IsMatrix<const OneHotColVector<int, DeviceTags::CPU> &>, "Test Error");
-    static_assert(IsMatrix<const OneHotColVector<int, DeviceTags::CPU> &&>, "Test Error");
+    static_assert(IsMatrix<OneHotColVector<int, CheckDevice>>, "Test Error");
+    static_assert(IsMatrix<OneHotColVector<int, CheckDevice> &>, "Test Error");
+    static_assert(IsMatrix<OneHotColVector<int, CheckDevice> &&>, "Test Error");
+    static_assert(IsMatrix<const OneHotColVector<int, CheckDevice> &>, "Test Error");
+    static_assert(IsMatrix<const OneHotColVector<int, CheckDevice> &&>, "Test Error");
 
-    auto rm = OneHotColVector<int, DeviceTags::CPU>(100, 37);
+    auto rm = OneHotColVector<int, CheckDevice>(100, 37);
     assert(rm.RowNum() == 100);
     assert(rm.ColNum() == 1);
     assert(rm.HotPos() == 37);
@@ -43,13 +44,13 @@ void test_one_hot_vector1()
 void test_one_hot_vector2()
 {
     cout << "Test one-hot vector case 2...\t";
-    static_assert(IsMatrix<OneHotRowVector<int, DeviceTags::CPU>>, "Test Error");
-    static_assert(IsMatrix<OneHotRowVector<int, DeviceTags::CPU> &>, "Test Error");
-    static_assert(IsMatrix<OneHotRowVector<int, DeviceTags::CPU> &&>, "Test Error");
-    static_assert(IsMatrix<const OneHotRowVector<int, DeviceTags::CPU> &>, "Test Error");
-    static_assert(IsMatrix<const OneHotRowVector<int, DeviceTags::CPU> &&>, "Test Error");
+    static_assert(IsMatrix<OneHotRowVector<int, CheckDevice>>, "Test Error");
+    static_assert(IsMatrix<OneHotRowVector<int, CheckDevice> &>, "Test Error");
+    static_assert(IsMatrix<OneHotRowVector<int, CheckDevice> &&>, "Test Error");
+    static_assert(IsMatrix<const OneHotRowVector<int, CheckDevice> &>, "Test Error");
+    static_assert(IsMatrix<const OneHotRowVector<int, CheckDevice> &&>, "Test Error");
 
-    auto rm = OneHotRowVector<int, DeviceTags::CPU>(100, 37);
+    auto rm = OneHotRowVector<int, CheckDevice>(100, 37);
     assert(rm.RowNum() == 1);
     assert(rm.ColNum() == 100);
     assert(rm.HotPos() == 37);
@@ -76,10 +77,10 @@ void test_one_hot_vector2()
 void test_one_hot_vector3()
 {
     cout << "Test one-hot vector case 3...\t";
-    auto rm1 = OneHotRowVector<int, DeviceTags::CPU>(100, 37);
-    auto rm2 = OneHotRowVector<int, DeviceTags::CPU>(50, 16);
-    auto cm1 = OneHotColVector<int, DeviceTags::CPU>(101, 20);
-    auto cm2 = OneHotColVector<int, DeviceTags::CPU>(49, 18);
+    auto rm1 = OneHotRowVector<int, CheckDevice>(100, 37);
+    auto rm2 = OneHotRowVector<int, CheckDevice>(50, 16);
+    auto cm1 = OneHotColVector<int, CheckDevice>(101, 20);
+    auto cm2 = OneHotColVector<int, CheckDevice>(49, 18);
 
     auto evalRes1 = rm1.EvalRegister();
     auto evalRes2 = rm2.EvalRegister();

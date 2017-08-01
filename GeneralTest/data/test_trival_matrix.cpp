@@ -1,4 +1,5 @@
 #include "test_trival_matrix.h"
+#include "../facilities/calculate_tags.h"
 #include <iostream>
 #include <cassert>
 #include <MetaNN/meta_nn.h>
@@ -10,13 +11,13 @@ namespace
 void TestTrivalMatrix1()
 {
     cout << "Test trival matrix case 1...\t";
-    static_assert(IsMatrix<TrivalMatrix<int, DeviceTags::CPU>>, "Test Error");
-    static_assert(IsMatrix<TrivalMatrix<int, DeviceTags::CPU> &>, "Test Error");
-    static_assert(IsMatrix<TrivalMatrix<int, DeviceTags::CPU> &&>, "Test Error");
-    static_assert(IsMatrix<const TrivalMatrix<int, DeviceTags::CPU> &>, "Test Error");
-    static_assert(IsMatrix<const TrivalMatrix<int, DeviceTags::CPU> &&>, "Test Error");
+    static_assert(IsMatrix<TrivalMatrix<int, CheckDevice>>, "Test Error");
+    static_assert(IsMatrix<TrivalMatrix<int, CheckDevice> &>, "Test Error");
+    static_assert(IsMatrix<TrivalMatrix<int, CheckDevice> &&>, "Test Error");
+    static_assert(IsMatrix<const TrivalMatrix<int, CheckDevice> &>, "Test Error");
+    static_assert(IsMatrix<const TrivalMatrix<int, CheckDevice> &&>, "Test Error");
 
-    auto rm = TrivalMatrix<int, DeviceTags::CPU>(10, 20, 100);
+    auto rm = TrivalMatrix<int, CheckDevice>(10, 20, 100);
     assert(rm.RowNum() == 10);
     assert(rm.ColNum() == 20);
 
@@ -38,8 +39,8 @@ void TestTrivalMatrix1()
 void TestTrivalMatrix2()
 {
     cout << "Test trival matrix case 2...\t";
-    TrivalMatrix<int, DeviceTags::CPU> rm1(100, 10, 14);
-    TrivalMatrix<int, DeviceTags::CPU> rm2(10, 20, 35);
+    TrivalMatrix<int, CheckDevice> rm1(100, 10, 14);
+    TrivalMatrix<int, CheckDevice> rm2(10, 20, 35);
 
     const auto& evalRes1 = rm1.EvalRegister();
     const auto& evalRes2 = rm2.EvalRegister();

@@ -3,6 +3,7 @@
 #include <MetaNN/data/facilities/continuous_memory.h>
 #include <MetaNN/data/facilities/lower_access.h>
 #include <MetaNN/data/matrices/matrices.h>
+#include <MetaNN/data/scalar.h>
 #include <MetaNN/evaluate/facilities/eval_handle.h>
 #include <cassert>
 #include <cstring>
@@ -15,20 +16,21 @@ struct LowerAccessImpl<Matrix<TElem, DeviceTags::CPU>>;
 
 template <typename TElem>
 class Matrix<TElem, DeviceTags::CPU>
-{
-    static_assert(std::is_same<std::decay_t<TElem>, TElem>::value,
+{    
+public:
+    static_assert(std::is_same<RemConstRef<TElem>, TElem>::value,
                   "TElem is not an available type");
-public:
-    using DeviceType = DeviceTags::CPU;
+                  
     using ElementType = TElem;
+    using DeviceType = DeviceTags::CPU;
+    
+    friend struct LowerAccessImpl<Matrix<TElem, DeviceTags::CPU>>;
 
-    friend struct LowerAccessImpl<Matrix<ElementType, DeviceTags::CPU>>;
-
+private:
+    using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
+    
 public:
-    explicit Matrix()
-        : Matrix(0, 0) {}
-
-    explicit Matrix(size_t p_rowNum, size_t p_colNum)
+    Matrix(size_t p_rowNum = 0, size_t p_colNum = 0)
         : m_mem(p_rowNum * p_colNum)
         , m_rowNum(p_rowNum)
         , m_colNum(p_colNum)
@@ -60,14 +62,14 @@ public:
 
     bool AvailableForWrite() const { return m_mem.UseCount() == 1; }
 
-    void SetValue(size_t p_rowId, size_t p_colId, ElementType val)
+    void SetValue(size_t p_rowId, size_t p_colId, StorageType val)
     {
         assert(AvailableForWrite());
         assert((p_rowId < m_rowNum) && (p_colId < m_colNum));
         (m_mem.RawMemory())[p_rowId * m_rowLen + p_colId] = val;
     }
 
-    const TElem operator () (size_t p_rowId, size_t p_colId) const
+    const auto operator () (size_t p_rowId, size_t p_colId) const
     {
         assert((p_rowId < m_rowNum) && (p_colId < m_colNum));
         return (m_mem.RawMemory())[p_rowId * m_rowLen + p_colId];
@@ -77,7 +79,7 @@ public:
     {
         assert((p_rowB < m_rowNum) && (p_colB < m_colNum));
         assert((p_rowE <= m_rowNum) && (p_colE <= m_colNum));
-        TElem* pos = m_mem.RawMemory() + p_rowB * m_rowLen + p_colB;
+        auto pos = m_mem.RawMemory() + p_rowB * m_rowLen + p_colB;
         return Matrix(m_mem.SharedPtr(), pos,
                       p_rowE - p_rowB, p_colE - p_colB,
                       m_rowLen);
@@ -87,10 +89,15 @@ public:
     {
         return MakeConstEvalHandle(*this);
     }
+    
+    bool IsEmpty() const noexcept
+    {
+        return (m_rowNum == 0) || (m_colNum == 0);
+    }
 
 private:
-    Matrix(std::shared_ptr<TElem> p_mem,
-            TElem* p_memStart,
+    Matrix(std::shared_ptr<StorageType> p_mem,
+            StorageType* p_memStart,
             size_t p_rowNum,
             size_t p_colNum,
             size_t p_rowLen)
@@ -101,7 +108,7 @@ private:
     {}
 
 private:
-    ContinuousMemory<TElem, DeviceType> m_mem;
+    ContinuousMemory<ElementType, DeviceType> m_mem;
     size_t m_rowNum;
     size_t m_colNum;
     size_t m_rowLen;
@@ -114,13 +121,16 @@ struct LowerAccessImpl<Matrix<TElem, DeviceTags::CPU>>
         : m_matrix(p)
     {}
 
-    TElem* MutableRawMemory()
+    auto MutableRawMemory(bool checkSingleton = true)
     {
-        assert(m_matrix.AvailableForWrite());
+        if (checkSingleton && !(m_matrix.AvailableForWrite()))
+        {
+            throw std::runtime_error("Cannot get mutable memory for write.");
+        }
         return m_matrix.m_mem.RawMemory();
     }
 
-    const TElem* RawMemory() const
+    const auto RawMemory() const
     {
         return m_matrix.m_mem.RawMemory();
     }

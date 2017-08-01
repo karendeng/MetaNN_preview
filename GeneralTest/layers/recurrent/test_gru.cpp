@@ -296,17 +296,17 @@ void test_gru_with_bptt()
 
         fData.push_back(MakeDynamic(gru.FeedForward(gru2).Get<LayerIO>()));
         
-        auto grad_gru2 = gru.FeedBackward(LayerIO::Create().Set<LayerIO>(fData[2] * (-1)));
+        auto grad_gru2 = gru.FeedBackward(LayerIO::Create().Set<LayerIO>(fData[2] * Scalar<int>(-1)));
         wi.FeedBackward(LayerIO::Create().Set<LayerIO>(grad_gru2.Get<GruInputBelow>()));
         wu.FeedBackward(LayerIO::Create().Set<LayerIO>(grad_gru2.Get<GruUpdateBelow>()));
         wr.FeedBackward(LayerIO::Create().Set<LayerIO>(grad_gru2.Get<GruResetBelow>()));
         
-        auto grad_gru1 = gru.FeedBackward(LayerIO::Create().Set<LayerIO>(fData[1] * (-1)));
+        auto grad_gru1 = gru.FeedBackward(LayerIO::Create().Set<LayerIO>(fData[1] * Scalar<int>(-1)));
         wi.FeedBackward(LayerIO::Create().Set<LayerIO>(grad_gru1.Get<GruInputBelow>()));
         wu.FeedBackward(LayerIO::Create().Set<LayerIO>(grad_gru1.Get<GruUpdateBelow>()));
         wr.FeedBackward(LayerIO::Create().Set<LayerIO>(grad_gru1.Get<GruResetBelow>()));
         
-        auto grad_gru0 = gru.FeedBackward(LayerIO::Create().Set<LayerIO>(fData[0] * (-1)));
+        auto grad_gru0 = gru.FeedBackward(LayerIO::Create().Set<LayerIO>(fData[0] * Scalar<int>(-1)));
         wi.FeedBackward(LayerIO::Create().Set<LayerIO>(grad_gru0.Get<GruInputBelow>()));
         wu.FeedBackward(LayerIO::Create().Set<LayerIO>(grad_gru0.Get<GruUpdateBelow>()));
         wr.FeedBackward(LayerIO::Create().Set<LayerIO>(grad_gru0.Get<GruResetBelow>()));

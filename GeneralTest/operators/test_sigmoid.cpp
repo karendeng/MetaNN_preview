@@ -40,7 +40,7 @@ void test_sigmoid1()
             assert(fabs(t_r(i, j) - aim) < 0.0001);
         }
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 
 void test_sigmoid2()
@@ -72,7 +72,7 @@ void test_sigmoid2()
         auto cm2 = evalHandle2.Data();
         assert(cm1 == cm2);
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 }
 

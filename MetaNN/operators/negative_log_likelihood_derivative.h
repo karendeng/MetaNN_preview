@@ -44,29 +44,31 @@ struct OperElementType_<TernaryOpTags::NegativeLogLikelihoodDerivative,
 
 template <typename TOp1, typename TOp2, typename TOp3>
 struct OperDeviceType_<TernaryOpTags::NegativeLogLikelihoodDerivative,
-                        TOp1, TOp2, TOp3>
+                       TOp1, TOp2, TOp3>
 {
     using type = typename TOp2::DeviceType;
 };
 
 namespace NSNegativeLogLikelihoodDerivative
 {
-template <typename TElement, typename TOperHandle2, typename TOperHandle3,
-          typename TDevice>
+namespace NSCaseGen
+{
+template <typename TOperHandle2, typename TOperHandle3, typename TElem, typename TDevice>
 class EvalUnit;
 
-template <typename TElement, typename TOperHandle2, typename TOperHandle3>
-class EvalUnit<TElement, TOperHandle2, TOperHandle3, DeviceTags::CPU>
+template <typename TElem, typename TOperHandle2, typename TOperHandle3>
+class EvalUnit<TOperHandle2, TOperHandle3, TElem, DeviceTags::CPU>
     : public BaseEvalUnit<DeviceTags::CPU>
 {
-    using TOperandData = std::decay_t<decltype(std::declval<TOperHandle2>().Data())>;
 public:
-    using ElementType = typename TOperandData::ElementType;
-    using DeviceType = typename TOperandData::DeviceType;
-    static_assert(std::is_same<DeviceType, DeviceTags::CPU>::value,
-                  "Device type mismatch");
+    using ElementType = TElem;
+    using DeviceType = typename DeviceTags::CPU;
 
-    EvalUnit(TElement grad, TOperHandle2 operTar, TOperHandle3 operPre,
+private:
+    using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
+    
+public:
+    EvalUnit(StorageType grad, TOperHandle2 operTar, TOperHandle3 operPre,
              EvalHandle<Matrix<ElementType, DeviceType>> evalOutput)
         : m_grad(std::move(grad))
         , m_handleTar(std::move(operTar))
@@ -97,7 +99,7 @@ public:
         assert(p_pre.ColNum() == colNum);
         
         m_evalOutput.Allocate(rowNum, colNum);
-        auto& res = m_evalOutput.Data();
+        auto& res = m_evalOutput.MutableData();
         
         assert(res.RowNum() == rowNum);
         assert(res.ColNum() == colNum);
@@ -110,9 +112,9 @@ public:
         const size_t src2PackNum = mem_v2.RowLen();
         const size_t tgtPackNum = mem_res.RowLen();
 
-        const ElementType* r1 = mem_v1.RawMemory();
-        const ElementType* r2 = mem_v2.RawMemory();
-        ElementType* r = mem_res.MutableRawMemory();
+        const StorageType* r1 = mem_v1.RawMemory();
+        const StorageType* r2 = mem_v2.RawMemory();
+        StorageType* r = mem_res.MutableRawMemory();
 
         for (size_t i = 0; i < rowNum; ++i)
         {
@@ -124,10 +126,11 @@ public:
             r2 += src2PackNum;
             r += tgtPackNum;
         }
+        m_evalOutput.SetEval();
     }
 
 private:
-    TElement m_grad;
+    StorageType m_grad;
     TOperHandle2 m_handleTar;
     TOperHandle3 m_handlePre;
     EvalHandle<Matrix<ElementType, DeviceType>> m_evalOutput;
@@ -135,36 +138,37 @@ private:
 
 struct Calculator
 {
-    template <typename TCaseTail, typename TEvalRes,
-              typename TOperator1, typename TOperator2, typename TOperator3>
-    static void EvalRegister(TEvalRes& evalRes, const TOperator1& oper1,
+    template <typename TCaseTail, typename TEvalRes, typename TElem,
+              typename TOperator2, typename TOperator3>
+    static void EvalRegister(TEvalRes& evalRes,
+                             const Scalar<TElem, DeviceTags::CPU>& oper1,
                              const TOperator2& oper2, const TOperator3& oper3)
     {
         static_assert(std::is_same<TCaseTail, OperSeqContainer<>>::value,
                       "General Case is not the last one");
                       
-        using RawEvalRes = typename TEvalRes::DataType;
-        using ElementType = typename RawEvalRes::ElementType;
-        using DeviceType = typename RawEvalRes::DeviceType;
+        using ElementType = typename TEvalRes::DataType::ElementType;
+        using DeviceType = typename TEvalRes::DataType::DeviceType;
 
         auto handle1 = oper2.EvalRegister();
         auto handle2 = oper3.EvalRegister();
-        using UnitType = EvalUnit<ElementType, decltype(handle1), 
-                                  decltype(handle2), DeviceType>;
+        using UnitType = EvalUnit<decltype(handle1), decltype(handle2), ElementType, DeviceType>;
         using GroupType = TrivalEvalGroup<UnitType>;
 
         auto outHandle = evalRes.Handle();
         const void* dataPtr = outHandle.DataPtr();
-        UnitType unit(oper1, std::move(handle1), std::move(handle2), std::move(outHandle));
+        UnitType unit(oper1.Value(), 
+                      std::move(handle1), std::move(handle2), std::move(outHandle));
         EvalPlan<DeviceType>::template Register<GroupType>(std::move(unit), dataPtr);
     }
 };
+}
 }
 
 template <>
 struct OperBuildInSeq_<TernaryOpTags::NegativeLogLikelihoodDerivative>
 {
-    using type = OperSeqContainer<NSNegativeLogLikelihoodDerivative::Calculator>;
+    using type = OperSeqContainer<NSNegativeLogLikelihoodDerivative::NSCaseGen::Calculator>;
 };
 
 template <typename TGrad, typename TP1, typename TP2>
@@ -172,9 +176,9 @@ struct OperNegativeLogLikelihoodDerivative_
 {
 // valid check
 private:
-    using rawGrad = std::decay_t<TGrad>;
-    using rawM1 = std::decay_t<TP1>;
-    using rawM2 = std::decay_t<TP2>;
+    using rawGrad = RemConstRef<TGrad>;
+    using rawM1 = RemConstRef<TP1>;
+    using rawM2 = RemConstRef<TP2>;
 
 public:
     static constexpr bool valid = IsScalar<rawGrad> && IsMatrix<rawM1> && IsMatrix<rawM2>;
@@ -182,10 +186,10 @@ public:
 public:
     static auto Eval(TGrad&& p_grad, TP1&& p_m1, TP2&& p_m2)
     {
-        static_assert(std::is_same<typename rawM1::DeviceType, typename rawM2::DeviceType>::value,
-                      "Matrices with different device types cannot do NegativeLogLikelihood derivative directly");
         static_assert(std::is_same<typename rawM1::ElementType, typename rawM2::ElementType>::value,
                       "Matrices with different element types cannot do NegativeLogLikelihood derivative directly");
+        static_assert(std::is_same<typename rawM1::DeviceType, typename rawM2::DeviceType>::value,
+                      "Matrices with different device types cannot do NegativeLogLikelihood derivative directly");
 
         using ResType = TernaryOp<TernaryOpTags::NegativeLogLikelihoodDerivative,
                                   rawGrad, rawM1, rawM2>;

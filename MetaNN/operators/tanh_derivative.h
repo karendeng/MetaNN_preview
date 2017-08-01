@@ -8,19 +8,18 @@ namespace MetaNN
 {
 namespace NSTanhDerivative
 {
-template <typename TOperHandle1, typename TOperHandle2, typename TDevice>
+namespace NSCaseGen
+{
+template <typename TOperHandle1, typename TOperHandle2, typename TElem, typename TDevice>
 class EvalUnit;
 
-template <typename TOperHandle1, typename TOperHandle2>
-class EvalUnit<TOperHandle1, TOperHandle2, DeviceTags::CPU>
+template <typename TOperHandle1, typename TOperHandle2, typename TElem>
+class EvalUnit<TOperHandle1, TOperHandle2, TElem, DeviceTags::CPU>
     : public BaseEvalUnit<DeviceTags::CPU>
 {
-    using TOperandData = std::decay_t<decltype(std::declval<TOperHandle1>().Data())>;
 public:
-    using ElementType = typename TOperandData::ElementType;
-    using DeviceType = typename TOperandData::DeviceType;
-    static_assert(std::is_same<DeviceType, DeviceTags::CPU>::value,
-                  "Device type mismatch");
+    using ElementType = TElem;
+    using DeviceType = DeviceTags::CPU;
 
     EvalUnit(TOperHandle1 oper1,
              TOperHandle2 oper2,
@@ -53,7 +52,7 @@ public:
         assert(p_out.ColNum() == colNum);
 
         m_evalOutput.Allocate(rowNum, colNum);
-        auto& res = m_evalOutput.Data();
+        auto& res = m_evalOutput.MutableData();
 
         auto mem_grad = LowerAccess(p_grad);
         auto mem_out = LowerAccess(p_out);
@@ -63,9 +62,10 @@ public:
         const size_t srcOutPackNum = mem_out.RowLen();
         const size_t tgtPackNum = mem_res.RowLen();
 
-        const ElementType* r1 = mem_grad.RawMemory();
-        const ElementType* r2 = mem_out.RawMemory();
-        ElementType* r = mem_res.MutableRawMemory();
+        using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
+        const StorageType* r1 = mem_grad.RawMemory();
+        const StorageType* r2 = mem_out.RawMemory();
+        StorageType* r = mem_res.MutableRawMemory();
 
         for (size_t i = 0; i < rowNum; ++i)
         {
@@ -77,6 +77,7 @@ public:
             r2 += srcOutPackNum;
             r += tgtPackNum;
         }
+        m_evalOutput.SetEval();
     }
 
 private:
@@ -93,12 +94,12 @@ struct Calculator
         static_assert(std::is_same<TCaseTail, OperSeqContainer<>>::value,
                       "General Case is not the last one");
                       
-        using RawEvalRes = typename TEvalRes::DataType;
-        using DeviceType = typename RawEvalRes::DeviceType;
+        using ElementType = typename TEvalRes::DataType::ElementType;
+        using DeviceType = typename TEvalRes::DataType::DeviceType;
 
         auto handle1 = oper1.EvalRegister();
         auto handle2 = oper2.EvalRegister();
-        using UnitType = EvalUnit<decltype(handle1), decltype(handle2), DeviceType>;
+        using UnitType = EvalUnit<decltype(handle1), decltype(handle2), ElementType, DeviceType>;
         using GroupType = TrivalEvalGroup<UnitType>;
 
         auto outHandle = evalRes.Handle();
@@ -108,19 +109,20 @@ struct Calculator
     }
 };
 }
+}
 
 template <>
 struct OperBuildInSeq_<BinaryOpTags::TanhDerivative>
 {
-    using type = OperSeqContainer<NSTanhDerivative::Calculator>;
+    using type = OperSeqContainer<NSTanhDerivative::NSCaseGen::Calculator>;
 };
 
 template <typename TGrad, typename TOut>
 struct OperTanhDerivative_
 {
 private:
-    using rawM1 = std::decay_t<TGrad>;
-    using rawM2 = std::decay_t<TOut>;
+    using rawM1 = RemConstRef<TGrad>;
+    using rawM2 = RemConstRef<TOut>;
 
 public:
     static constexpr bool valid = (IsMatrix<rawM1> && IsMatrix<rawM2>);

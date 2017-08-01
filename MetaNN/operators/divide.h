@@ -7,19 +7,18 @@ namespace MetaNN
 {
 namespace NSDivide
 {
-template <typename TOperHandle1, typename TOperHandle2, typename TDevice>
+namespace NSCaseGen
+{
+template <typename TOperHandle1, typename TOperHandle2, typename TElem, typename TDevice>
 class EvalUnit;
 
-template <typename TOperHandle1, typename TOperHandle2>
-class EvalUnit<TOperHandle1, TOperHandle2, DeviceTags::CPU>
+template <typename TOperHandle1, typename TOperHandle2, typename TElem>
+class EvalUnit<TOperHandle1, TOperHandle2, TElem, DeviceTags::CPU>
     : public BaseEvalUnit<DeviceTags::CPU>
 {
-    using TOperandData = std::decay_t<decltype(std::declval<TOperHandle1>().Data())>;
 public:
-    using ElementType = typename TOperandData::ElementType;
-    using DeviceType = typename TOperandData::DeviceType;
-    static_assert(std::is_same<DeviceType, DeviceTags::CPU>::value,
-                  "Device type mismatch");
+    using ElementType = TElem;
+    using DeviceType = DeviceTags::CPU;
 
     EvalUnit(TOperHandle1&& oper1,
              TOperHandle2&& oper2,
@@ -51,7 +50,7 @@ public:
         assert(p_v2.ColNum() == colNum);
 
         m_evalOutput.Allocate(rowNum, colNum);
-        auto& res = m_evalOutput.Data();
+        auto& res = m_evalOutput.MutableData();
 
         const auto mem_v1 = LowerAccess(p_v1);
         const auto mem_v2 = LowerAccess(p_v2);
@@ -61,9 +60,10 @@ public:
         const size_t src2PackNum = mem_v2.RowLen();
         const size_t tgtPackNum = mem_res.RowLen();
 
-        const ElementType* r1 = mem_v1.RawMemory();
-        const ElementType* r2 = mem_v2.RawMemory();
-        ElementType* r = mem_res.MutableRawMemory();
+        using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
+        const StorageType* r1 = mem_v1.RawMemory();
+        const StorageType* r2 = mem_v2.RawMemory();
+        StorageType* r = mem_res.MutableRawMemory();
 
         for (size_t i = 0; i < rowNum; ++i)
         {
@@ -75,15 +75,16 @@ public:
             r2 += src2PackNum;
             r += tgtPackNum;
         }
+        m_evalOutput.SetEval();
     }
 
 private:
     TOperHandle1 m_oper1;
     TOperHandle2 m_oper2;
-    EvalHandle<Matrix<ElementType, DeviceTags::CPU>> m_evalOutput;
+    EvalHandle<Matrix<ElementType, DeviceType>> m_evalOutput;
 };
 
-struct GeneralCase
+struct Calculator
 {
     template <typename TCaseTail, typename TEvalRes, typename TOperator1, typename TOperator2>
     static void EvalRegister(TEvalRes& evalRes, const TOperator1& oper1, const TOperator2& oper2)
@@ -91,12 +92,12 @@ struct GeneralCase
         static_assert(std::is_same<TCaseTail, OperSeqContainer<>>::value,
                       "General Case is not the last one");
                       
-        using RawEvalRes = typename TEvalRes::DataType;
-        using DeviceType = typename RawEvalRes::DeviceType;
+        using ElementType = typename TEvalRes::DataType::ElementType;
+        using DeviceType = typename TEvalRes::DataType::DeviceType;
 
         auto handle1 = oper1.EvalRegister();
         auto handle2 = oper2.EvalRegister();
-        using UnitType = EvalUnit<decltype(handle1), decltype(handle2), DeviceType>;
+        using UnitType = EvalUnit<decltype(handle1), decltype(handle2), ElementType, DeviceType>;
         using GroupType = TrivalEvalGroup<UnitType>;
 
         auto outHandle = evalRes.Handle();
@@ -106,11 +107,12 @@ struct GeneralCase
     }
 };
 }
+}
 
 template <>
 struct OperBuildInSeq_<BinaryOpTags::Divide>
 {
-    using type = OperSeqContainer<NSDivide::GeneralCase>;
+    using type = OperSeqContainer<NSDivide::NSCaseGen::Calculator>;
 };
 
 template <typename TP1, typename TP2>
@@ -118,8 +120,8 @@ struct OperDivide_
 {
 // valid check
 private:
-    using rawM1 = std::decay_t<TP1>;
-    using rawM2 = std::decay_t<TP2>;
+    using rawM1 = RemConstRef<TP1>;
+    using rawM2 = RemConstRef<TP2>;
 
 public:
     static constexpr bool valid = (IsMatrix<rawM1> && IsMatrix<rawM2>) ||
@@ -132,44 +134,40 @@ public:
               std::enable_if_t<std::is_same<CategoryTags::Matrix, T2>::value>* = nullptr>
     static auto Eval(TP1&& p_m1, TP2&& p_m2)
     {
-        static_assert(std::is_same<typename rawM1::DeviceType, typename rawM2::DeviceType>::value,
-                      "Matrices with different device types cannot divide directly");
         static_assert(std::is_same<typename rawM1::ElementType, typename rawM2::ElementType>::value,
                       "Matrices with different element types cannot divide directly");
+        static_assert(std::is_same<typename rawM1::DeviceType, typename rawM2::DeviceType>::value,
+                      "Matrices with different device types cannot divide directly");
 
         using ResType = BinaryOp<BinaryOpTags::Divide, rawM1, rawM2>;
         return ResType(std::forward<TP1>(p_m1), std::forward<TP2>(p_m2));
     }
 
-    template<typename T1, typename T2,
-             std::enable_if_t<std::is_same<CategoryTags::Matrix, T1>::value>* = nullptr,
-             std::enable_if_t<std::is_same<CategoryTags::Scalar, T2>::value>* = nullptr>
-    static auto Eval(TP1&& p_m1, TP2&& p_m2)
+    template<typename T1, typename T2, typename TElem,
+             std::enable_if_t<std::is_same<CategoryTags::Matrix, T1>::value>* = nullptr>
+    static auto Eval(TP1&& p_m1, Scalar<TElem, DeviceTags::CPU>&& p_m2)
     {
         using ElementType = typename rawM1::ElementType;
         using DeviceType = typename rawM1::DeviceType;
 
-        TrivalMatrix<ElementType, DeviceType> tmpMatrix(p_m1.RowNum(),
-                                                        p_m1.ColNum(),
-                                                        static_cast<ElementType>(p_m2));
-
+        TrivalMatrix<ElementType, DeviceType> tmpMatrix(p_m1.RowNum(), p_m1.ColNum(),
+                                                        p_m2.Value());
+                                           
         using ResType = BinaryOp<BinaryOpTags::Divide,
                                  rawM1,
                                  TrivalMatrix<ElementType, DeviceType>>;
         return ResType(std::forward<TP1>(p_m1), std::move(tmpMatrix));
     }
 
-    template<typename T1, typename T2,
-             std::enable_if_t<std::is_same<CategoryTags::Scalar, T1>::value>* = nullptr,
+    template<typename T1, typename T2, typename TElem,
              std::enable_if_t<std::is_same<CategoryTags::Matrix, T2>::value>* = nullptr>
-    static auto Eval(TP1&& p_m1, TP2&& p_m2)
+    static auto Eval(Scalar<TElem, DeviceTags::CPU>&& p_m1, TP2&& p_m2)
     {
-        using ElementType = typename rawM2::ElementType;
-        using DeviceType = typename rawM2::DeviceType;
+        using ElementType = typename rawM1::ElementType;
+        using DeviceType = typename rawM1::DeviceType;
 
-        TrivalMatrix<ElementType, DeviceType> tmpMatrix(p_m2.RowNum(),
-                                                        p_m2.ColNum(),
-                                                        static_cast<ElementType>(p_m1));
+        TrivalMatrix<ElementType, DeviceType> tmpMatrix(p_m2.RowNum(), p_m2.ColNum(),
+                                              p_m1.Value());
 
         using ResType = BinaryOp<BinaryOpTags::Divide,
                                  TrivalMatrix<ElementType, DeviceType>,

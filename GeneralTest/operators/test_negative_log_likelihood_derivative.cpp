@@ -14,7 +14,7 @@ void test_negative_log_likelihood_derivative1()
     cout << "Test negative log likelihood derivative case 1 ...\t";
     auto rm1 = GenMatrix<float>(4, 5, 1, 1);
     auto rm2 = GenMatrix<float>(4, 5, 2, 2);
-    auto div = NegativeLogLikelihoodDerivative(0.5, rm1, rm2);
+    auto div = NegativeLogLikelihoodDerivative(Scalar<float>(0.5), rm1, rm2);
     auto div_r = Evaluate(div);
 
     for (size_t i = 0; i < 4; ++i)
@@ -29,7 +29,7 @@ void test_negative_log_likelihood_derivative1()
     rm2 = GenMatrix<float>(111, 113, 2, 3);
     rm1 = rm1.SubMatrix(31, 35, 17, 22);
     rm2 = rm2.SubMatrix(41, 45, 27, 32);
-    div = NegativeLogLikelihoodDerivative(0.3, rm1, rm2);
+    div = NegativeLogLikelihoodDerivative(Scalar<float>(0.3), rm1, rm2);
     div_r = Evaluate(div);
     for (size_t i = 0; i < 4; ++i)
     {
@@ -38,7 +38,7 @@ void test_negative_log_likelihood_derivative1()
             assert(fabs(div_r(i, j) + 0.3 * rm1(i, j) / rm2(i, j)) < 0.001);
         }
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 
 void test_negative_log_likelihood_derivative2()
@@ -47,8 +47,8 @@ void test_negative_log_likelihood_derivative2()
     {
         auto rm1 = GenMatrix<float>(4, 5, 1.0f, 0.0001f);
         auto rm2 = GenMatrix<float>(4, 5, 2, 2);
-        auto res = NegativeLogLikelihoodDerivative(1, rm1, rm2);
-        auto res2 = NegativeLogLikelihoodDerivative(1, rm1, rm2);
+        auto res = NegativeLogLikelihoodDerivative(Scalar<float>(1), rm1, rm2);
+        auto res2 = NegativeLogLikelihoodDerivative(Scalar<float>(1), rm1, rm2);
 
         assert(res == res2);
 
@@ -59,7 +59,7 @@ void test_negative_log_likelihood_derivative2()
     {
         auto rm1 = GenMatrix<float>(4, 5, 1.0f, 0.0001f);
         auto rm2 = GenMatrix<float>(4, 5, 2, 2);
-        auto res = NegativeLogLikelihoodDerivative(1, rm1, rm2);
+        auto res = NegativeLogLikelihoodDerivative(Scalar<float>(1), rm1, rm2);
         auto res2 = res;
 
         assert(res == res2);
@@ -72,7 +72,7 @@ void test_negative_log_likelihood_derivative2()
         auto cm2 = handle2.Data();
         assert(cm1 == cm2);
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 }
 

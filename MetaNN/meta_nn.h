@@ -3,17 +3,18 @@
 #include <MetaNN/policies/policy_operations.h>
 #include <MetaNN/policies/policy_selector.h>
 #include <MetaNN/policies/change_policy.h>
+#include <MetaNN/facilities/named_params.h>
+#include <MetaNN/layers/facilities/policies.h>
 
+#include <MetaNN/data/dynamic.h>
+#include <MetaNN/data/scalar.h>
 #include <MetaNN/data/matrices/cpu_matrix.h>
-#include <MetaNN/data/matrices/one_hot_vector.h>
 #include <MetaNN/data/matrices/trival_matrix.h>
+#include <MetaNN/data/matrices/one_hot_vector.h>
 #include <MetaNN/data/matrices/zero_matrix.h>
 
 #include <MetaNN/data/batch/general.h>
 #include <MetaNN/data/batch/matrix.h>
-#include <MetaNN/data/dynamic.h>
-
-#include <MetaNN/data_copy/data_copy.h>
 
 #include <MetaNN/operators/abs.h>
 #include <MetaNN/operators/add.h>
@@ -34,6 +35,8 @@
 #include <MetaNN/operators/tanh_derivative.h>
 #include <MetaNN/operators/transpose.h>
 
+#include <MetaNN/data_copy/data_copy.h>
+
 #include <MetaNN/layers/facilities/make_layer.h>
 #include <MetaNN/layers/elementary/abs_layer.h>
 #include <MetaNN/layers/elementary/add_layer.h>
@@ -45,9 +48,9 @@
 #include <MetaNN/layers/elementary/tanh_layer.h>
 #include <MetaNN/layers/elementary/weight_layer.h>
 
-#include <MetaNN/layers/cost/negative_log_likelihood_layer.h>
-
 #include <MetaNN/layers/compose/linear_layer.h>
 #include <MetaNN/layers/compose/single_layer.h>
 
 #include <MetaNN/layers/recurrent/recurrent_layer.h>
+
+#include <MetaNN/layers/cost/negative_log_likelihood_layer.h>

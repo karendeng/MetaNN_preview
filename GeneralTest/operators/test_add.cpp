@@ -1,4 +1,5 @@
 #include "test_add.h"
+#include "../facilities/calculate_tags.h"
 #include "../facilities/data_gen.h"
 #include <MetaNN/meta_nn.h>
 #include <cassert>
@@ -37,14 +38,14 @@ void test_add1()
             assert(add_r(i, j) == rm1(i, j) + rm2(i, j));
         }
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 
 void test_add2()
 {
     cout << "Test add case 2 ...\t";
     auto rm1 = GenMatrix<int>(4, 5, 0, 1);
-    auto add = rm1 + 2;
+    auto add = rm1 + MetaNN::Scalar<int, DeviceTags::CPU>(2);
     auto add_r = Evaluate(add);
     for (size_t i = 0; i < 4; ++i)
     {
@@ -56,7 +57,7 @@ void test_add2()
 
     rm1 = GenMatrix<int>(111, 113, 2, 3);
     rm1 = rm1.SubMatrix(31, 35, 17, 22);
-    add = 3 + rm1;
+    add = Scalar<int>(3) + rm1;
     add_r = Evaluate(add);
     for (size_t i = 0; i < 4; ++i)
     {
@@ -65,14 +66,14 @@ void test_add2()
             assert(add_r(i, j) == rm1(i, j) + 3);
         }
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 
 void test_add3()
 {
     cout << "Test add case 3 ...\t";
-    auto rm1 = TrivalMatrix<int, DeviceTags::CPU>(2, 10, 3);
-    auto rm2 = TrivalMatrix<int, DeviceTags::CPU>(2, 10, 5);
+    auto rm1 = TrivalMatrix<int, CheckDevice>(2, 10, 3);
+    auto rm2 = TrivalMatrix<int, CheckDevice>(2, 10, 5);
     auto add = rm1 + rm2;
     auto add_r = Evaluate(add);
     for (size_t i = 0; i < 2; ++i)
@@ -82,7 +83,7 @@ void test_add3()
             assert(add_r(i, j) == 8);
         }
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 }
 

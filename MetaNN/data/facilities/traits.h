@@ -4,7 +4,7 @@
 namespace MetaNN
 {
 template <typename TElem, typename TDevice> class Matrix;
-
+template <typename TElem, typename TDevice> class Scalar;
 template <typename TData> class Batch;
 
 template <typename TCategory, typename TElem, typename TDevice>
@@ -13,7 +13,7 @@ struct PrincipalDataType_;
 template <typename TElem, typename TDevice>
 struct PrincipalDataType_<CategoryTags::Scalar, TElem, TDevice>
 {
-    using type = TElem;
+    using type = Scalar<TElem, TDevice>;
 };
 
 template <typename TElem, typename TDevice>
@@ -30,6 +30,19 @@ struct PrincipalDataType_<CategoryTags::BatchMatrix, TElem, TDevice>
 
 template <typename TCategory, typename TElem, typename TDevice>
 using PrincipalDataType = typename PrincipalDataType_<TCategory, TElem, TDevice>::type;
+
+/// is scalar
+template <typename T>
+constexpr bool IsScalar = false;
+
+template <typename T>
+constexpr bool IsScalar<const T> = IsScalar<T>;
+
+template <typename T>
+constexpr bool IsScalar<T&> = IsScalar<T>;
+
+template <typename T>
+constexpr bool IsScalar<T&&> = IsScalar<T>;
 
 /// is matrix
 template <typename T>
@@ -63,10 +76,6 @@ constexpr bool IsBatchMatrix<T&&> = IsBatchMatrix<T>;
 template <typename T>
 constexpr bool IsBatchMatrix<const T&&> = IsBatchMatrix<T>;
 
-/// is invalid data
-template <typename T>
-constexpr bool IsScalar = (!IsMatrix<T>) && (!IsBatchMatrix<T>);
-
 template <typename T>
 struct DataCategory_
 {
@@ -98,4 +107,31 @@ public:
 
 template <typename T>
 using DataCategory = typename DataCategory_<T>::type;
+
+template <typename T>
+struct RemConstRef_
+{
+    using type = T;
+};
+
+template <typename T>
+struct RemConstRef_<const T>
+{
+    using type = typename RemConstRef_<T>::type;
+};
+
+template <typename T>
+struct RemConstRef_<T&&>
+{
+    using type = typename RemConstRef_<T>::type;
+};
+
+template <typename T>
+struct RemConstRef_<T&>
+{
+    using type = typename RemConstRef_<T>::type;
+};
+
+template <typename T>
+using RemConstRef = typename RemConstRef_<T>::type;
 }

@@ -22,7 +22,9 @@ void test_sign1()
     {
         for (size_t j = 0; j<5; ++j)
         {
-            float aim = (rm1(i, j) >= 0) ? 1 : -1;
+            float aim = 0;
+            if (rm1(i, j) != 0)
+                aim = (rm1(i, j) > 0) ? 1 : -1;
             assert(fabs(t_r(i, j) - aim) < 0.0001);
         }
     }
@@ -36,7 +38,9 @@ void test_sign1()
     {
         for (size_t j = 0; j<5; ++j)
         {
-            float aim = (rm1(i, j) >= 0) ? 1 : -1;
+            float aim = 0;
+            if (rm1(i, j) != 0)
+                aim = (rm1(i, j) > 0) ? 1 : -1;
             assert(fabs(t_r(i, j) - aim) < 0.0001);
         }
     }

@@ -1,17 +1,15 @@
 #pragma once
 
-#include <type_traits>
-
 namespace MetaNN
 {
 /// lower access
 template<typename TData>
 struct LowerAccessImpl;
 
-template <typename TMatrix>
-auto LowerAccess(const TMatrix& p)
+template <typename TData>
+auto LowerAccess(const TData& p)
 {
-    TMatrix& castRes = const_cast<TMatrix&>(p);
-    return LowerAccessImpl<TMatrix>(castRes);
+    TData& castRes = const_cast<TData&>(p);
+    return LowerAccessImpl<TData>(castRes);
 }
 }

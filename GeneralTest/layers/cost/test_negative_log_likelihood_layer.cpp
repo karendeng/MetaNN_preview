@@ -32,7 +32,7 @@ void test_negative_log_likelihood_layer1()
             check -= log(in(i, j)) * label(i, j);
         }
     }
-    assert(fabs(res - check) < 0.0001);
+    assert(fabs(res.Value() - check) < 0.0001);
 
     LayerNeutralInvariant(layer);
 
@@ -71,9 +71,9 @@ void test_negative_log_likelihood_layer2()
             check -= log(in(i, j)) * label(i, j);
         }
     }
-    assert(fabs(res - check) < 0.0001);
+    assert(fabs(res.Value() - check) < 0.0001);
 
-    auto fb = LayerIO::Create().Set<LayerIO>(0.5);
+    auto fb = LayerIO::Create().Set<LayerIO>(Scalar<float>(0.5));
     auto out_grad = layer.FeedBackward(fb);
     LayerNeutralInvariant(layer);
 
@@ -122,12 +122,12 @@ void test_negative_log_likelihood_layer3()
                 check -= log(in(i, j)) * label(i, j);
             }
         }
-        assert(fabs(res - check) < 0.0001);
+        assert(fabs(res.Value() - check) < 0.0001);
     }
 
     for (size_t loop_count = 9; loop_count >= 1; --loop_count)
     {
-        auto out_grad = layer.FeedBackward(LayerIO::Create().Set<LayerIO>(0.5 * loop_count));
+        auto out_grad = layer.FeedBackward(LayerIO::Create().Set<LayerIO>(Scalar<float>(0.5 * loop_count)));
         auto fb = Evaluate(out_grad.Get<CostLayerIn>());
 
         auto in = op_in.back(); op_in.pop_back();

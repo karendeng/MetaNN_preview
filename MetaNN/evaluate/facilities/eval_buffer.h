@@ -1,7 +1,7 @@
 #pragma once
 
-#include <MetaNN/evaluate/facilities/eval_handle.h>
 #include <memory>
+#include <MetaNN/evaluate/facilities/eval_handle.h>
 
 namespace MetaNN
 {
@@ -11,26 +11,22 @@ class EvalBuffer
 public:
     using DataType = TData;
     
-    EvalBuffer()
-        : m_buf(new std::shared_ptr<TData>())
-    {}
-
     auto Handle() const
     {
-        return EvalHandle<TData>(m_buf);
+        return m_handle;
     }
     
     auto ConstHandle() const
     {
-        return ConstEvalHandle<EvalHandle<TData>>(Handle());
+        return ConstEvalHandle<EvalHandle<TData>>(m_handle);
     }
     
-    bool IsEmpty() const
+    bool IsEvaluated() const noexcept
     {
-        return (*m_buf == nullptr);
+        return m_handle.IsEvaluated();
     }
     
 private:
-    std::shared_ptr<std::shared_ptr<TData>> m_buf;
+    EvalHandle<TData> m_handle;
 };
 }

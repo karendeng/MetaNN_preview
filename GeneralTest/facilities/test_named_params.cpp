@@ -1,6 +1,7 @@
 #include "test_named_params.h"
 #include <iostream>
 #include <cassert>
+#include <cmath>
 #include <set>
 #include <MetaNN/meta_nn.h>
 using namespace std;

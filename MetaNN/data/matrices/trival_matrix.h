@@ -14,17 +14,18 @@ namespace MetaNN
 {
 namespace NSTrivalMatrix
 {
-template <typename TElement, typename TDevice>
+template <typename TElem, typename TDevice>
 class EvalUnit;
 
-template <typename TElement>
-class EvalUnit<TElement, DeviceTags::CPU> : public BaseEvalUnit<DeviceTags::CPU>
+template <typename TElem>
+class EvalUnit<TElem, DeviceTags::CPU>
+    : public BaseEvalUnit<DeviceTags::CPU>
 {
+    using ScalarType = Scalar<TElem, DeviceTags::CPU>;
+    using StorageType = typename ScalarType::StorageType;
 public:
-    using ElementType = TElement;
-
-    EvalUnit(EvalHandle<Matrix<TElement, DeviceTags::CPU>> resBuf,
-             size_t rowNum, size_t colNum, TElement val)
+    EvalUnit(EvalHandle<Matrix<TElem, DeviceTags::CPU>> resBuf,
+             size_t rowNum, size_t colNum, StorageType val)
         : m_resHandle(std::move(resBuf))
         , m_rowNum(rowNum)
         , m_colNum(colNum)
@@ -32,8 +33,23 @@ public:
 
     void Eval() override
     {
-        m_resHandle.Allocate(m_rowNum, m_colNum);
-        auto lowLayer = LowerAccess(m_resHandle.Data());
+        auto& mutableData = m_resHandle.MutableData();
+        if (mutableData.IsEmpty())
+        {
+            m_resHandle.Allocate(m_rowNum, m_colNum);
+        }
+        else
+        {
+            if (mutableData.RowNum() != m_rowNum)
+            {
+                throw std::runtime_error("Row number mismatch for TrivalMatrix::Eval");
+            }
+            if (mutableData.ColNum() != m_colNum)
+            {
+                throw std::runtime_error("Column number mismatch for TrivalMatrix::Eval");
+            }
+        }
+        auto lowLayer = LowerAccess(mutableData);
         const size_t rowLen = lowLayer.RowLen();
         auto mem = lowLayer.MutableRawMemory();
         for (size_t i = 0; i < m_rowNum; ++i)
@@ -44,6 +60,7 @@ public:
             }
             mem += rowLen;
         }
+        m_resHandle.SetEval();
     }
 
     size_t OperandDepth(const std::unordered_map<const void*, size_t>&) const
@@ -52,25 +69,26 @@ public:
     }
     
 private:
-    EvalHandle<Matrix<TElement, DeviceTags::CPU>> m_resHandle;
+    EvalHandle<Matrix<TElem, DeviceTags::CPU>> m_resHandle;
     size_t m_rowNum;
     size_t m_colNum;
-    TElement m_val;
+    StorageType m_val;
 };
 }
 
 template<typename TElem, typename TDevice>
 class TrivalMatrix
 {
-    static_assert(std::is_same<std::decay_t<TElem>, TElem>::value,
-                  "TElem is not an available type");
 public:
-    using DeviceType = TDevice;
     using ElementType = TElem;
-
+    using DeviceType = TDevice;
+    
+private:
+    using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
+    
 public:
     TrivalMatrix(size_t p_rowNum, size_t p_colNum,
-                 ElementType p_val)
+                 StorageType p_val)
         : m_val(p_val)
         , m_rowNum(p_rowNum)
         , m_colNum(p_colNum) {}
@@ -108,7 +126,7 @@ public:
     {
         using TEvalUnit = NSTrivalMatrix::EvalUnit<ElementType, DeviceType>;
         using TEvalGroup = TrivalEvalGroup<TEvalUnit>;
-        if (m_evalBuf.IsEmpty())
+        if (!m_evalBuf.IsEvaluated())
         {
             auto evalHandle = m_evalBuf.Handle();
             TEvalUnit unit(evalHandle, m_rowNum, m_colNum, m_val);
@@ -123,10 +141,10 @@ public:
     }
 
 private:
-    ElementType m_val;
+    StorageType m_val;
     size_t m_rowNum;
     size_t m_colNum;
-    EvalBuffer<Matrix<TElem, TDevice>> m_evalBuf;
+    EvalBuffer<Matrix<ElementType, DeviceType>> m_evalBuf;
 };
 
 template <typename TElem, typename TDevice>

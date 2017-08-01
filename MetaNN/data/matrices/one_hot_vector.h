@@ -14,17 +14,16 @@ namespace MetaNN
 {
 namespace NSOneHotVector
 {
-template <typename TElement, typename TDevice>
+template <typename TElem, typename TDevice>
 class EvalUnit;
 
 template <typename TElement>
-class EvalUnit<TElement, DeviceTags::CPU> : public BaseEvalUnit<DeviceTags::CPU>
+class EvalUnit<TElement, DeviceTags::CPU>
+    : public BaseEvalUnit<DeviceTags::CPU>
 {
 public:
-    using ElementType = TElement;
-
     EvalUnit(EvalHandle<Matrix<TElement, DeviceTags::CPU>> resBuf,
-             size_t rowNum, size_t colNum, TElement val)
+             size_t rowNum, size_t colNum, size_t val)
         : m_resHandle(std::move(resBuf))
         , m_rowNum(rowNum)
         , m_colNum(colNum)
@@ -35,11 +34,27 @@ public:
 
     void Eval() override
     {
-        m_resHandle.Allocate(m_rowNum, m_colNum);
-        auto lowLayer = LowerAccess(m_resHandle.Data());
+        auto& mutableData = m_resHandle.MutableData();
+        if (mutableData.IsEmpty())
+        {
+            m_resHandle.Allocate(m_rowNum, m_colNum);
+        }
+        else
+        {
+            if (mutableData.RowNum() != m_rowNum)
+            {
+                throw std::runtime_error("Row number mismatch for OneHotVector::Eval");
+            }
+            if (mutableData.ColNum() != m_colNum)
+            {
+                throw std::runtime_error("Column number mismatch for OneHotVector::Eval");
+            }
+        }
+        auto lowLayer = LowerAccess(mutableData);
         auto mem = lowLayer.MutableRawMemory();
         memset(mem, 0, sizeof(TElement) * m_rowNum * m_colNum);
         mem[m_val] = 1;
+        m_resHandle.SetEval();
     }
 
     size_t OperandDepth(const std::unordered_map<const void*, size_t>&) const
@@ -55,14 +70,15 @@ private:
 };
 }
 
-template<typename TElem, typename TDevice>
+template <typename TElem, typename TDevice>
 class OneHotRowVector
 {
-    static_assert(std::is_same<std::decay_t<TElem>, TElem>::value,
-                  "TElem is not an available type");
 public:
-    using DeviceType = TDevice;
     using ElementType = TElem;
+    using DeviceType = TDevice;
+
+private:
+    using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
 
 public:
     OneHotRowVector(size_t p_colNum,
@@ -92,14 +108,13 @@ public:
     }
 
     size_t RowNum() const { return 1; }
-
     size_t ColNum() const { return m_colNum; }
 
     auto EvalRegister() const
     {
         using TEvalUnit = NSOneHotVector::EvalUnit<ElementType, DeviceType>;
         using TEvalGroup = TrivalEvalGroup<TEvalUnit>;
-        if (m_evalBuf.IsEmpty())
+        if (!m_evalBuf.IsEvaluated())
         {
             auto evalHandle = m_evalBuf.Handle();
             TEvalUnit unit(evalHandle, 1, m_colNum, m_hotPos);
@@ -116,7 +131,7 @@ public:
 private:
     size_t m_colNum;
     size_t m_hotPos;
-    EvalBuffer<Matrix<TElem, TDevice>> m_evalBuf;
+    EvalBuffer<Matrix<ElementType, DeviceType>> m_evalBuf;
 };
 
 template <typename TElem, typename TDevice>
@@ -125,11 +140,12 @@ constexpr bool IsMatrix<OneHotRowVector<TElem, TDevice>> = true;
 template<typename TElem, typename TDevice>
 class OneHotColVector
 {
-    static_assert(std::is_same<std::decay_t<TElem>, TElem>::value,
-                  "TElem is not an available type");
 public:
-    using DeviceType = TDevice;
     using ElementType = TElem;
+    using DeviceType = TDevice;
+
+private:
+    using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
 
 public:
     OneHotColVector(size_t p_rowNum,
@@ -166,7 +182,7 @@ public:
     {
         using TEvalUnit = NSOneHotVector::EvalUnit<ElementType, DeviceType>;
         using TEvalGroup = TrivalEvalGroup<TEvalUnit>;
-        if (m_evalBuf.IsEmpty())
+        if (!m_evalBuf.IsEvaluated())
         {
             auto evalHandle = m_evalBuf.Handle();
             TEvalUnit unit(evalHandle, m_rowNum, 1, m_hotPos);
@@ -183,7 +199,7 @@ public:
 private:
     size_t m_rowNum;
     size_t m_hotPos;
-    EvalBuffer<Matrix<TElem, TDevice>> m_evalBuf;
+    EvalBuffer<Matrix<ElementType, DeviceType>> m_evalBuf;
 };
 template <typename TElem, typename TDevice>
 constexpr bool IsMatrix<OneHotColVector<TElem, TDevice>> = true;

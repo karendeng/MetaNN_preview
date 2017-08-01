@@ -1,4 +1,5 @@
 #include "test_eval_plan.h"
+#include "../facilities/calculate_tags.h"
 #include <iostream>
 #include <cassert>
 #include <set>
@@ -11,7 +12,7 @@ namespace
 void TestEvalPlan1()
 {
     cout << "Test eval plan case 1...\t";
-    auto rm = OneHotColVector<int, DeviceTags::CPU>(100, 37);
+    auto rm = OneHotColVector<int, CheckDevice>(100, 37);
     
     auto eh = rm.EvalRegister();
     try
@@ -28,10 +29,10 @@ void TestEvalPlan1()
 void TestEvalPlan2()
 {
     cout << "Test eval plan case 2...\t";
-    auto rm = OneHotColVector<int, DeviceTags::CPU>(100, 37);
+    auto rm = OneHotColVector<int, CheckDevice>(100, 37);
     
     auto eh1 = rm.EvalRegister();
-    EvalPlan<DeviceTags::CPU>::Eval();
+    EvalPlan<CheckDevice>::Eval();
     auto eh2 = rm.EvalRegister();
     assert(eh1.Data() == eh2.Data());
     cout << "done" << endl;
@@ -40,11 +41,11 @@ void TestEvalPlan2()
 void TestEvalPlan3()
 {
     cout << "Test eval plan case 3...\t";
-    auto rm = OneHotColVector<int, DeviceTags::CPU>(100, 37);
+    auto rm = OneHotColVector<int, CheckDevice>(100, 37);
     auto rm2 = rm;
     
     auto eh1 = rm.EvalRegister();
-    EvalPlan<DeviceTags::CPU>::Eval();
+    EvalPlan<CheckDevice>::Eval();
     auto eh2 = rm2.EvalRegister();
     assert(eh1.Data() == eh2.Data());
     cout << "done" << endl;
@@ -53,11 +54,11 @@ void TestEvalPlan3()
 void TestEvalPlan4()
 {
     cout << "Test eval plan case 4...\t";
-    auto rm = OneHotColVector<int, DeviceTags::CPU>(100, 37);
+    auto rm = OneHotColVector<int, CheckDevice>(100, 37);
     
     auto eh1 = rm.EvalRegister();
     auto eh2 = rm.EvalRegister();
-    EvalPlan<DeviceTags::CPU>::Eval();
+    EvalPlan<CheckDevice>::Eval();
     assert(eh1.Data() == eh2.Data());
     cout << "done" << endl;
 }

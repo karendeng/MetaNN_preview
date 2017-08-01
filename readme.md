@@ -144,8 +144,7 @@ auto add = rm1 + rm2;
 ```cpp
 BinaryOp<BinaryOpTags::Add,
          Matrix<int, DeviceTags::CPU>,
-         Matrix<int, DeviceTags::CPU>,
-         int, MetaNN::DeviceTags::CPU>
+         Matrix<int, DeviceTags::CPU>>
 ```
 通常来说，我们在实际的程序设计过程中不需要关心 ```add``` 的实际类型（只需要像上例中那样使用 ```auto``` 让编译器自动推导，或者使用前文所提供的动态类型对其进行封装即可）。但在这里，还是有必要了解一下 ```add``` 对象对应的类型所包含的信息的。
 
@@ -161,13 +160,11 @@ auto sub = add - rm3;
 ```
 此时， ```sub``` 所对应的类型为：
 ```cpp
-BinaryOp<BinaryOpTags::Substract, 
+BinaryOp<BinaryOpTags::Substract,
          BinaryOp<BinaryOpTags::Add,
-                  Matrix<int, DeviceTags::CPU>, 
                   Matrix<int, DeviceTags::CPU>,
-                  int, MetaNN::DeviceTags::CPU>,
-         ZeroMatrix<int, DeviceTags::CPU>,
-         int, DeviceTags::CPU>
+                  Matrix<int, DeviceTags::CPU>>,
+         ZeroMatrix<int, DeviceTags::CPU>>
 ```
 
 本质上，模板表达式形成了一种树的结构。而模板表达式的求值过程，也可以被视为一种树的遍历过程。这个过程可以被优化。我们将在后续讨论求值时讨论相关的优化方法。
@@ -175,13 +172,11 @@ BinaryOp<BinaryOpTags::Substract,
 ### 模板表达式的分类
 模板表达式也可以被视为数据， MetaNN 自动实现了模板表达式的分类。比如：
 ```cpp
-IsMatrix<BinaryOp<BinaryOpTags::Substract, 
+IsMatrix<BinaryOp<BinaryOpTags::Substract,
                   BinaryOp<BinaryOpTags::Add,
-                           Matrix<int, DeviceTags::CPU>, 
                            Matrix<int, DeviceTags::CPU>,
-                           int, MetaNN::DeviceTags::CPU>,
-                  ZeroMatrix<int, DeviceTags::CPU>,
-                  int, DeviceTags::CPU>>;    // true
+                           Matrix<int, DeviceTags::CPU>>,
+                  ZeroMatrix<int, DeviceTags::CPU>>;    // true
 ```
 这是因为两个矩阵相加的结果还是矩阵，而矩阵与矩阵相减的结果还是矩阵。
 
@@ -196,8 +191,8 @@ struct OperAdd_
 {
 // valid check
 private:
-    using rawM1 = std::decay_t<TP1>;
-    using rawM2 = std::decay_t<TP2>;
+    using rawM1 = RemConstRef<TP1>;
+    using rawM2 = RemConstRef<TP2>;
 
 public:
     static constexpr bool valid = (IsMatrix<rawM1> && IsMatrix<rawM2>) ||
@@ -265,7 +260,7 @@ struct SingleLayerPolicy {
         struct Tanh;
     };
     using ActionType = ActionTypeEnum::Sigmoid;
-    
+
     // ...
 };
 ```
@@ -450,8 +445,7 @@ auto out = layer.FeedForward(input).Get<LayerIO>();
 ```cpp
 BinaryOp<BinaryOpTags::Add,
          Matrix<float, DeviceTags::CPU>,
-         Matrix<float, DeviceTags::CPU>,
-         float, DeviceTags::CPU>
+         Matrix<float, DeviceTags::CPU>>
 ```
 它是一个模板表达式，而非实际的计算结果。正是由于我们将层的正向反向传播的接口设置成模板的，同时使用容器作为输入输出对象，从而实现了这个效果。对于很多深度学习框架来说，引入层就意味着将计算限制在了层的内部（层的输入与输出是计算好的结果），这就对系统的整体性能优化产生了不利的影响。但 MetaNN 使用了模板与编译期计算，有效地解决了这个问题！在 MetaNN 中，层只是用于代码与模板表达式的组织，最终的计算会留到最后一并进行。
 
@@ -574,7 +568,7 @@ using RootLayer2 = MakeLayer<LinearLayer, PUpdate>;
 // Bias layer will be updated, while Weight layer will not update
 using RootLayer3 =
     MakeLayer<LinearLayer, PUpdate,
-              SubPolicyContainer<Sublayerof<LinearLayer>::Weight, 
+              SubPolicyContainer<Sublayerof<LinearLayer>::Weight,
                                  PNoUpdate>>;
 
 // Similar to RootLayer3
@@ -660,4 +654,3 @@ struct OperBuildInSeq_<BinaryOpTags::RowSoftmaxDerivative>
 除了深度学习框架之外， MetaNN 对于 C\+\+ 模板元编程也有其贡献。Policy 的概念并非 MetaNN 原创，但它对 Policy 的实现进行了扩展，使得在一个模板中 Policy 的个数不再有限制（事实上，Policy 的个数还会取决于编译器对变长模板的支持程度）。MetaNN 还实现了一个编译期容器，对数据分类、Policy 组织方面都有深入的探讨。它所实现的编译期拓扑排序也将元编程的技术从“小技巧”扩展成切实可用的算法层面。可以说，如果能将这套代码读懂，那么对 C\+\+ 元编程就会有相对深入的理解了。
 
 最后要说的一点是：本套代码没有注释。这个文档是 MetaNN 的一个简介，但并没有深入到其中的细节之中，想通过这篇文档来理解程序的实现还是比较困难的。 MetaNN 包含了很多细节，之所以没有注释，是因为如果读者对 C\+\+ 模板元编程有所了解，那么我认为阅读这个代码中的逻辑对于这些读者来说是比较直白的。反过来，如果读者不了解 C\+\+ 模板元编程，或者了解较少，那么加了注释并不能起到多大作用。要完全描述出这个框架中的实现细节，需要一本书的篇幅——如果时间允许，我会考虑写这么一本的。
-

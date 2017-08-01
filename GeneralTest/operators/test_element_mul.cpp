@@ -36,14 +36,14 @@ void test_mul1()
             assert(mul_r(i, j) == rm1(i, j) * rm2(i, j));
         }
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 
 void test_mul2()
 {
     cout << "Test element mul case 2 ...\t";
     auto rm1 = GenMatrix<int>(4, 5, 0, 1);
-    auto mul = rm1 * 2;
+    auto mul = rm1 * Scalar<int>(2);
     auto mul_r = Evaluate(mul);
     for (size_t i = 0; i < 4; ++i)
     {
@@ -55,7 +55,7 @@ void test_mul2()
 
     rm1 = GenMatrix<int>(111, 113, 2, 3);
     rm1 = rm1.SubMatrix(31, 35, 17, 22);
-    mul = 3 * rm1;
+    mul = Scalar<int>(3) * rm1;
 
     mul_r = Evaluate(mul);
     for (size_t i = 0; i < 4; ++i)
@@ -65,7 +65,7 @@ void test_mul2()
             assert(mul_r(i, j) == rm1(i, j) * 3);
         }
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 
 void test_mul3()

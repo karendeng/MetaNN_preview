@@ -1,9 +1,9 @@
 #pragma once
 
+#include <MetaNN/data/scalar.h>
 #include <MetaNN/data/facilities/tags.h>
 #include <MetaNN/evaluate/facilities/eval_buffer.h>
 #include <memory>
-#include <iostream>
 
 namespace MetaNN
 {
@@ -14,9 +14,9 @@ template <typename TElem, typename TDevice>
 class DynamicCategory<TElem, TDevice, CategoryTags::Matrix>
 {
 public:
-    using DeviceType = TDevice;
     using ElementType = TElem;
-    using EvalType = Matrix<ElementType, DeviceType>;
+    using DeviceType = TDevice;
+    using EvalType = PrincipalDataType<CategoryTags::Matrix, ElementType, DeviceType>;
 
 public:
     template <typename TBase>
@@ -43,9 +43,9 @@ template <typename TElem, typename TDevice>
 class DynamicCategory<TElem, TDevice, CategoryTags::BatchMatrix>
 {
 public:
-    using DeviceType = TDevice;
     using ElementType = TElem;
-    using EvalType = Batch<Matrix<ElementType, DeviceType>>;
+    using DeviceType = TDevice;
+    using EvalType = PrincipalDataType<CategoryTags::BatchMatrix, ElementType, DeviceType>;
 
 public:
     template <typename TBase>
@@ -79,8 +79,6 @@ class DynamicWrapper : public DynamicCategory<typename TBaseData::ElementType,
     using TBase = DynamicCategory<typename TBaseData::ElementType,
                                   typename TBaseData::DeviceType,
                                   DataCategory<TBaseData>>;
-    using EvalType = typename TBase::EvalType;
-
 public:
     DynamicWrapper(TBaseData data)
         : TBase(data)
@@ -104,7 +102,7 @@ public:
         return !(operator==(val));
     }
 
-    DynamicConstEvalHandle<EvalType> EvalRegister() const override
+    DynamicConstEvalHandle<typename TBase::EvalType> EvalRegister() const override
     {
         return m_baseData.EvalRegister();
     }
@@ -128,7 +126,7 @@ class DynamicData<TElem, TDevice, CategoryTags::Matrix>
 public:
     using ElementType = TElem;
     using DeviceType = TDevice;
-    using ResHandleType = DynamicConstEvalHandle<Matrix<ElementType, DeviceType>>;
+    using ResHandleType = decltype(std::declval<BaseData>().EvalRegister());
 
     DynamicData() = default;
     
@@ -193,7 +191,7 @@ class DynamicData<TElem, TDevice, CategoryTags::BatchMatrix>
 public:
     using ElementType = TElem;
     using DeviceType = TDevice;
-    using ResHandleType = DynamicConstEvalHandle<Batch<Matrix<ElementType, DeviceType>>>;
+    using ResHandleType = decltype(std::declval<BaseData>().EvalRegister());
 
     DynamicData() = default;
     
@@ -266,7 +264,7 @@ struct DynamicType_<DynamicData<TElem, TDevice, TDataCate>>
 };
 
 template <typename TData>
-using DynamicType = typename DynamicType_<std::decay_t<TData>>::type;
+using DynamicType = typename DynamicType_<RemConstRef<TData>>::type;
 
 template <typename TElem, typename TDevice, typename TDataCate>
 auto MakeDynamic(const DynamicData<TElem, TDevice, TDataCate>& data)
@@ -277,7 +275,7 @@ auto MakeDynamic(const DynamicData<TElem, TDevice, TDataCate>& data)
 template <typename TData>
 auto MakeDynamic(TData&& data)
 {
-    using rawData = std::decay_t<TData>;
+    using rawData = RemConstRef<TData>;
     
     using TDeriveData = DynamicWrapper<rawData>;
     auto baseData = std::make_shared<TDeriveData>(std::forward<TData>(data));

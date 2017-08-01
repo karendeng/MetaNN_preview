@@ -24,7 +24,7 @@ void test_negative_log_likelihood1()
             check -= rm1(i, j) * log(rm2(i, j));
         }
     }
-    assert(fabs(t_r - check) < 0.0001);
+    assert(fabs(t_r.Value() - check) < 0.0001);
 
 
     rm1 = GenMatrix<float>(111, 113, 1.1f, 0.0001f);
@@ -40,7 +40,7 @@ void test_negative_log_likelihood1()
             check -= rm1(i, j) * log(rm2(i, j));
         }
     }
-    assert(fabs(t_r - check) < 0.0001);
+    assert(fabs(t_r.Value() - check) < 0.0001);
 
     cout << "done" << endl;
 }

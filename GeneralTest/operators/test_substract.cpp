@@ -44,7 +44,7 @@ void test_substract2()
 {
     cout << "Test substract case 2 ...\t";
     auto rm1 = GenMatrix<int>(4, 5, 3, -1);
-    auto sub = rm1 - 2;
+    auto sub = rm1 - Scalar<int>(2);
     auto sub_r = Evaluate(sub);
     for (size_t i = 0; i < 4; ++i)
     {
@@ -56,7 +56,7 @@ void test_substract2()
 
     rm1 = GenMatrix<int>(111, 113, 2, 3);
     rm1 = rm1.SubMatrix(31, 35, 17, 22);
-    auto sub1 = 3 - rm1;
+    auto sub1 = Scalar<int>(3) - rm1;
     sub_r = Evaluate(sub1);
     for (size_t i = 0; i < 4; ++i)
     {

@@ -9,18 +9,18 @@ namespace MetaNN
 {
 namespace NSRowSoftmax
 {
-template <typename TOperHandle, typename TDevice>
+namespace NSCaseGen
+{
+template <typename TOperHandle, typename TElem, typename TDevice>
 class EvalUnit;
 
-template <typename TOperHandle>
-class EvalUnit<TOperHandle, DeviceTags::CPU> : public BaseEvalUnit<DeviceTags::CPU>
+template <typename TOperHandle, typename TElem>
+class EvalUnit<TOperHandle, TElem, DeviceTags::CPU>
+    : public BaseEvalUnit<DeviceTags::CPU>
 {
-    using TOperandData = std::decay_t<decltype(std::declval<TOperHandle>().Data())>;
 public:
-    using ElementType = typename TOperandData::ElementType;
-    using DeviceType = typename TOperandData::DeviceType;
-    static_assert(std::is_same<DeviceType, DeviceTags::CPU>::value,
-                  "Device type mismatch");
+    using ElementType = TElem;
+    using DeviceType = DeviceTags::CPU;
 
     EvalUnit(TOperHandle oper,
              EvalHandle<Matrix<ElementType, DeviceType>> evalOutput)
@@ -45,17 +45,18 @@ public:
         
         m_evalOutput.Allocate(1, colNum);
         if (colNum == 0) return;
-        auto& res = m_evalOutput.Data();
+        auto& res = m_evalOutput.MutableData();
 
         auto mem_v1 = LowerAccess(p_v);
         auto mem_res = LowerAccess(res);
 
-        const ElementType* r1 = mem_v1.RawMemory();
-        ElementType* r = mem_res.MutableRawMemory();
+        using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
+        const StorageType* r1 = mem_v1.RawMemory();
+        StorageType* r = mem_res.MutableRawMemory();
         
         auto maxElem = *std::max_element(r1, r1 + colNum);
 
-        ElementType sum = ElementType();
+        StorageType sum = StorageType();
 
         for (size_t i = 0; i < colNum; ++i)
         {
@@ -67,6 +68,7 @@ public:
         {
             r[i] /= sum;
         }
+        m_evalOutput.SetEval();
     }
 
 private:
@@ -74,7 +76,7 @@ private:
     EvalHandle<Matrix<ElementType, DeviceType>> m_evalOutput;
 };
 
-struct GeneralCase
+struct Calculator
 {
     template <typename TCaseTail, typename TEvalRes, typename TOperand>
     static void EvalRegister(TEvalRes& evalRes, const TOperand& oper)
@@ -82,11 +84,11 @@ struct GeneralCase
         static_assert(std::is_same<TCaseTail, OperSeqContainer<>>::value,
                       "General Case is not the last one");
                       
-        using RawEvalRes = typename TEvalRes::DataType;
-        using DeviceType = typename RawEvalRes::DeviceType;
+        using ElementType = typename TEvalRes::DataType::ElementType;
+        using DeviceType = typename TEvalRes::DataType::DeviceType;
 
         auto handle = oper.EvalRegister();
-        using UnitType = EvalUnit<decltype(handle), DeviceType>;
+        using UnitType = EvalUnit<decltype(handle), ElementType, DeviceType>;
         using GroupType = TrivalEvalGroup<UnitType>;
 
         auto outHandle = evalRes.Handle();
@@ -96,11 +98,12 @@ struct GeneralCase
     }
 };
 }
+}
 
 template <>
 struct OperBuildInSeq_<UnaryOpTags::RowSoftmax>
 {
-    using type = OperSeqContainer<NSRowSoftmax::GeneralCase>;
+    using type = OperSeqContainer<NSRowSoftmax::NSCaseGen::Calculator>;
 };
 
 template <typename TP>
@@ -108,7 +111,7 @@ struct OperRowSoftmax_
 {
 // valid check
 private:
-    using rawM = std::decay_t<TP>;
+    using rawM = RemConstRef<TP>;
 
 public:
     static constexpr bool valid = IsMatrix<rawM>;
@@ -132,18 +135,18 @@ auto RowSoftmax(TP&& p_m)
 
 namespace NSColSoftmax
 {
-template <typename TOperHandle, typename TDevice>
+namespace NSCaseGen
+{
+template <typename TOperHandle, typename TElem, typename TDevice>
 class EvalUnit;
 
-template <typename TOperHandle>
-class EvalUnit<TOperHandle, DeviceTags::CPU> : public BaseEvalUnit<DeviceTags::CPU>
+template <typename TOperHandle, typename TElem>
+class EvalUnit<TOperHandle, TElem, DeviceTags::CPU>
+    : public BaseEvalUnit<DeviceTags::CPU>
 {
-    using TOperandData = std::decay_t<decltype(std::declval<TOperHandle>().Data())>;
 public:
-    using ElementType = typename TOperandData::ElementType;
-    using DeviceType = typename TOperandData::DeviceType;
-    static_assert(std::is_same<DeviceType, DeviceTags::CPU>::value,
-                  "Device type mismatch");
+    using ElementType = TElem;
+    using DeviceType = DeviceTags::CPU;
 
     EvalUnit(TOperHandle oper,
              EvalHandle<Matrix<ElementType, DeviceType>> evalOutput)
@@ -168,24 +171,25 @@ public:
         
         m_evalOutput.Allocate(rowNum, 1);
         if (rowNum == 0) return;
-        auto& res = m_evalOutput.Data();
+        auto& res = m_evalOutput.MutableData();
 
         auto mem_v1 = LowerAccess(p_v);
         auto mem_res = LowerAccess(res);
         
         auto srcRowLen = mem_v1.RowLen();
 
-        const ElementType* r1 = mem_v1.RawMemory();
-        ElementType* r = mem_res.MutableRawMemory();
+        using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
+        const StorageType* r1 = mem_v1.RawMemory();
+        StorageType* r = mem_res.MutableRawMemory();
         
-        ElementType maxElem = r1[0];
+        StorageType maxElem = r1[0];
         for (size_t i = 1; i < rowNum; ++i)
         {
             auto tmp = r1[i * srcRowLen];
             maxElem = (maxElem > tmp) ? maxElem : tmp;
         }
 
-        ElementType sum = ElementType();
+        StorageType sum = StorageType();
 
         for (size_t i = 0; i < rowNum; ++i)
         {
@@ -197,6 +201,7 @@ public:
         {
             r[i] /= sum;
         }
+        m_evalOutput.SetEval();
     }
 
 private:
@@ -204,7 +209,7 @@ private:
     EvalHandle<Matrix<ElementType, DeviceType>> m_evalOutput;
 };
 
-struct GeneralCase
+struct Calculator
 {
     template <typename TCaseTail, typename TEvalRes, typename TOperand>
     static void EvalRegister(TEvalRes& evalRes, const TOperand& oper)
@@ -212,11 +217,11 @@ struct GeneralCase
         static_assert(std::is_same<TCaseTail, OperSeqContainer<>>::value,
                       "General Case is not the last one");
                       
-        using RawEvalRes = typename TEvalRes::DataType;
-        using DeviceType = typename RawEvalRes::DeviceType;
+        using ElementType = typename TEvalRes::DataType::ElementType;
+        using DeviceType = typename TEvalRes::DataType::DeviceType;
 
         auto handle = oper.EvalRegister();
-        using UnitType = EvalUnit<decltype(handle), DeviceType>;
+        using UnitType = EvalUnit<decltype(handle), ElementType, DeviceType>;
         using GroupType = TrivalEvalGroup<UnitType>;
 
         auto outHandle = evalRes.Handle();
@@ -226,11 +231,12 @@ struct GeneralCase
     }
 };
 }
+}
 
 template <>
 struct OperBuildInSeq_<UnaryOpTags::ColSoftmax>
 {
-    using type = OperSeqContainer<NSColSoftmax::GeneralCase>;
+    using type = OperSeqContainer<NSColSoftmax::NSCaseGen::Calculator>;
 };
 
 template <typename TP>
@@ -238,7 +244,7 @@ struct OperColSoftmax_
 {
 // valid check
 private:
-    using rawM = std::decay_t<TP>;
+    using rawM = RemConstRef<TP>;
 
 public:
     static constexpr bool valid = IsMatrix<rawM>;

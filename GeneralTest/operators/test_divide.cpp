@@ -38,14 +38,14 @@ void test_div1()
             assert(fabs(div_r(i, j) - rm1(i, j) / rm2(i, j)) < 0.001);
         }
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 
 void test_div2()
 {
     cout << "Test divide case 2 ...\t";
     auto rm1 = GenMatrix<float>(4, 5, 1, 1);
-    auto div = rm1 / 2;
+    auto div = rm1 / Scalar<float>(2);
     auto div_r = Evaluate(div);
     for (size_t i = 0; i < 4; ++i)
     {
@@ -57,7 +57,7 @@ void test_div2()
 
     rm1 = GenMatrix<float>(111, 113, 2, 3);
     rm1 = rm1.SubMatrix(31, 35, 17, 22);
-    auto div1 = 3 / rm1;
+    auto div1 = Scalar<float>(3) / rm1;
 
     div_r = Evaluate(div1);
     for (size_t i = 0; i < 4; ++i)
@@ -67,7 +67,7 @@ void test_div2()
             assert(fabs(div_r(i, j) - 3 / rm1(i, j)) < 0.001);
         }
     }
-    cout << "Done" << endl;
+    cout << "done" << endl;
 }
 }
 

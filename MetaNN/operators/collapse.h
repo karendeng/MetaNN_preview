@@ -10,21 +10,21 @@ struct OperCategory_<UnaryOpTags::Collapse, CategoryTags::BatchMatrix>
 
 namespace NSCollapse
 {
-template <typename TOperand, typename TDevice>
+namespace NSCaseGen
+{
+template <typename TOperand, typename TElem, typename TDevice>
 class EvalUnit;
 
-template <typename TOperand>
-class EvalUnit<TOperand, DeviceTags::CPU> : public BaseEvalUnit<DeviceTags::CPU>
+template <typename TOperand, typename TElem>
+class EvalUnit<TOperand, TElem, DeviceTags::CPU>
+    : public BaseEvalUnit<DeviceTags::CPU>
 {
-    using TOperandData = std::decay_t<decltype(std::declval<TOperand>().Data())>;
 public:
-    using ElementType = typename TOperandData::ElementType;
-    using DeviceType = typename TOperandData::DeviceType;
-    static_assert(std::is_same<DeviceType, DeviceTags::CPU>::value,
-                  "Device type mismatch");
+    using ElementType = TElem;
+    using DeviceType = DeviceTags::CPU;
 
     EvalUnit(TOperand evalInput,
-             EvalHandle<Matrix<ElementType, DeviceTags::CPU>> evalOutput)
+             EvalHandle<Matrix<ElementType, DeviceType>> evalOutput)
         : m_evalInput(std::move(evalInput))
         , m_evalOutput(std::move(evalOutput)) {}
 
@@ -43,13 +43,14 @@ public:
         const size_t batchNum = p_v.BatchNum();
         m_evalOutput.Allocate(rowNum, colNum);
         
-        auto& res = m_evalOutput.Data();
+        auto& res = m_evalOutput.MutableData();
 
+        using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
         for (size_t j = 0; j < rowNum; ++j)
         {
             for (size_t k = 0; k < colNum; ++k)
             {
-                ElementType tmp = 0;
+                StorageType tmp = 0;
                 for (size_t i = 0; i < batchNum; ++i)
                 {
                     tmp += p_v[i](j, k);
@@ -57,14 +58,15 @@ public:
                 res.SetValue(j, k, tmp);
             }
         }
+        m_evalOutput.SetEval();
     }
 
 private:
     TOperand m_evalInput;
-    EvalHandle<Matrix<ElementType, DeviceTags::CPU>> m_evalOutput;
+    EvalHandle<Matrix<ElementType, DeviceType>> m_evalOutput;
 };
 
-struct GeneralCase
+struct Calculator
 {
     template <typename TCaseTail, typename TEvalRes, typename TOperand>
     static void EvalRegister(TEvalRes& evalRes, const TOperand& operand)
@@ -72,10 +74,11 @@ struct GeneralCase
         static_assert(std::is_same<TCaseTail, OperSeqContainer<>>::value,
                       "General Case is not the last one");
                       
+        using ElementType = typename TEvalRes::DataType::ElementType;
         using DeviceType = typename TEvalRes::DataType::DeviceType;
         
         auto handle = operand.EvalRegister();
-        using UnitType = EvalUnit<decltype(handle), DeviceType>;
+        using UnitType = EvalUnit<decltype(handle), ElementType, DeviceType>;
         using GroupType = TrivalEvalGroup<UnitType>;
 
         auto outHandle = evalRes.Handle();
@@ -85,11 +88,12 @@ struct GeneralCase
     }
 };
 }
+}
 
 template <>
 struct OperBuildInSeq_<UnaryOpTags::Collapse>
 {
-    using type = OperSeqContainer<NSCollapse::GeneralCase>;
+    using type = OperSeqContainer<NSCollapse::NSCaseGen::Calculator>;
 };
 
 template <typename TP>

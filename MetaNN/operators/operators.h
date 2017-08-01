@@ -12,7 +12,7 @@ namespace MetaNN
 template <typename TOpTag, typename TData>
 class UnaryOp : public OperOrganizer<TOpTag, OperCateCal<TOpTag, TData>>
 {
-    static_assert(std::is_same<std::decay_t<TData>, TData>::value,
+    static_assert(std::is_same<RemConstRef<TData>, TData>::value,
                   "TData is not an available type");
     using Cate = OperCateCal<TOpTag, TData>;
 
@@ -44,7 +44,7 @@ public:
 
     auto EvalRegister() const
     {
-        if (m_evalBuf.IsEmpty())
+        if (!m_evalBuf.IsEvaluated())
         {
             using TOperSeqCont = OperSeq<TOpTag>;
             
@@ -70,9 +70,9 @@ private:
 template <typename TOpTag, typename TData1, typename TData2>
 class BinaryOp : public OperOrganizer<TOpTag, OperCateCal<TOpTag, TData1, TData2>>
 {
-    static_assert(std::is_same<std::decay_t<TData1>, TData1>::value,
+    static_assert(std::is_same<RemConstRef<TData1>, TData1>::value,
                   "TData1 is not an available type");
-    static_assert(std::is_same<std::decay_t<TData2>, TData2>::value,
+    static_assert(std::is_same<RemConstRef<TData2>, TData2>::value,
                   "TData2 is not an available type");
     using Cate = OperCateCal<TOpTag, TData1, TData2>;
 
@@ -105,7 +105,7 @@ public:
 
     auto EvalRegister() const
     {
-        if (m_evalBuf.IsEmpty())
+        if (!m_evalBuf.IsEvaluated())
         {
             using TOperSeqCont = OperSeq<TOpTag>;
             
@@ -137,11 +137,11 @@ private:
 template <typename TOpTag, typename TData1, typename TData2, typename TData3>
 class TernaryOp : public OperOrganizer<TOpTag, OperCateCal<TOpTag, TData1, TData2, TData3>>
 {
-    static_assert(std::is_same<std::decay_t<TData1>, TData1>::value,
+    static_assert(std::is_same<RemConstRef<TData1>, TData1>::value,
                   "TData1 is not an available type");
-    static_assert(std::is_same<std::decay_t<TData2>, TData2>::value,
+    static_assert(std::is_same<RemConstRef<TData2>, TData2>::value,
                   "TData2 is not an available type");
-    static_assert(std::is_same<std::decay_t<TData3>, TData3>::value,
+    static_assert(std::is_same<RemConstRef<TData3>, TData3>::value,
                   "TData3 is not an available type");
     using Cate = OperCateCal<TOpTag, TData1, TData2, TData3>;
 
@@ -177,7 +177,7 @@ public:
 
     auto EvalRegister() const
     {
-        if (m_evalBuf.IsEmpty())
+        if (!m_evalBuf.IsEvaluated())
         {
             using TOperSeqCont = OperSeq<TOpTag>;
             

@@ -13,18 +13,17 @@ namespace MetaNN
 {
 namespace NSSign
 {
-template <typename TOperHandle, typename TDevice>
+namespace NSCaseGen
+{
+template <typename TOperHandle, typename TElem, typename TDevice>
 class EvalUnit;
 
-template <typename TOperHandle>
-class EvalUnit<TOperHandle, DeviceTags::CPU> : public BaseEvalUnit<DeviceTags::CPU>
+template <typename TOperHandle, typename TElem>
+class EvalUnit<TOperHandle, TElem, DeviceTags::CPU> : public BaseEvalUnit<DeviceTags::CPU>
 {
-    using TOperandData = std::decay_t<decltype(std::declval<TOperHandle>().Data())>;
 public:
-    using ElementType = typename TOperandData::ElementType;
-    using DeviceType = typename TOperandData::DeviceType;
-    static_assert(std::is_same<DeviceType, DeviceTags::CPU>::value,
-                  "Device type mismatch");
+    using ElementType = TElem;
+    using DeviceType = DeviceTags::CPU;
 
     EvalUnit(TOperHandle oper,
              EvalHandle<Matrix<ElementType, DeviceType>> evalOutput)
@@ -48,7 +47,7 @@ public:
         const size_t colNum = p_v.ColNum();
         
         m_evalOutput.Allocate(rowNum, colNum);
-        auto& res = m_evalOutput.Data();
+        auto& res = m_evalOutput.MutableData();
         
         auto mem_v1 = LowerAccess(p_v);
         auto mem_res = LowerAccess(res);
@@ -56,21 +55,26 @@ public:
         const size_t src1PackNum = mem_v1.RowLen();
         const size_t tgtPackNum = mem_res.RowLen();
 
-        const ElementType* r1 = mem_v1.RawMemory();
-        ElementType* r = mem_res.MutableRawMemory();
+        using StorageType = typename Scalar<ElementType, DeviceType>::StorageType;
+        const StorageType* r1 = mem_v1.RawMemory();
+        StorageType* r = mem_res.MutableRawMemory();
 
-        constexpr auto zeroValue = ElementType();
-        constexpr auto oneValue = (ElementType)1;
+        constexpr auto zeroValue = StorageType();
+        constexpr auto oneValue = (StorageType)1;
         
         for (size_t i = 0; i < rowNum; ++i)
         {
             for (size_t j = 0; j < colNum; ++j)
             {
-                r[j] = (r1[j] >= zeroValue) ? oneValue : -oneValue;
+                if (r1[j] == zeroValue)
+                    r[j] = zeroValue;
+                else
+                    r[j] = (r1[j] > zeroValue) ? oneValue : -oneValue;
             }
             r1 += src1PackNum;
             r += tgtPackNum;
         }
+        m_evalOutput.SetEval();
     }
 
 private:
@@ -78,7 +82,7 @@ private:
     EvalHandle<Matrix<ElementType, DeviceType>> m_evalOutput;
 };
 
-struct GeneralCase
+struct Calculator
 {
     template <typename TCaseTail, typename TEvalRes, typename TOperand>
     static void EvalRegister(TEvalRes& evalRes, const TOperand& oper)
@@ -86,11 +90,11 @@ struct GeneralCase
         static_assert(std::is_same<TCaseTail, OperSeqContainer<>>::value,
                       "General Case is not the last one");
                       
-        using RawEvalRes = typename TEvalRes::DataType;
-        using DeviceType = typename RawEvalRes::DeviceType;
+        using ElementType = typename TEvalRes::DataType::ElementType;
+        using DeviceType = typename TEvalRes::DataType::DeviceType;
 
         auto handle = oper.EvalRegister();
-        using UnitType = EvalUnit<decltype(handle), DeviceType>;
+        using UnitType = EvalUnit<decltype(handle), ElementType, DeviceType>;
         using GroupType = TrivalEvalGroup<UnitType>;
 
         auto outHandle = evalRes.Handle();
@@ -100,11 +104,12 @@ struct GeneralCase
     }
 };
 }
+}
 
 template <>
 struct OperBuildInSeq_<UnaryOpTags::Sign>
 {
-    using type = OperSeqContainer<NSSign::GeneralCase>;
+    using type = OperSeqContainer<NSSign::NSCaseGen::Calculator>;
 };
 
 template <typename TP>
@@ -112,7 +117,7 @@ struct OperSign_
 {
 // valid check
 private:
-    using rawM = std::decay_t<TP>;
+    using rawM = RemConstRef<TP>;
 
 public:
     static constexpr bool valid = IsMatrix<rawM>;

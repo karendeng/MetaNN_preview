@@ -38,7 +38,8 @@ struct FeedbackOut_
         }
         auto tmp = grad.template Get<LayerIO>();
         auto res1 = plambda.top() * tmp;
-        auto res2 = (1 - plambda.top()) * tmp;
+        
+        auto res2 = (Scalar<int>(1) - plambda.top()) * tmp;
         auto res_lambda = (p1.top() - p2.top()) * tmp;
         auto res = InterpolateLayerInput::Create().template Set<InterpolateLayerWeight1>(std::move(res1))
                                               .template Set<InterpolateLayerWeight2>(std::move(res2))

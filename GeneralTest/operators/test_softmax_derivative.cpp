@@ -1,5 +1,6 @@
 #include "test_softmax_derivative.h"
 #include "../facilities/data_gen.h"
+#include "../facilities/calculate_tags.h"
 
 #include <MetaNN/meta_nn.h>
 #include <cassert>
@@ -17,7 +18,7 @@ void test_softmax_derivative1()
     auto t = RowSoftmaxDerivative(mGrad, mSout);
     auto t_r = Evaluate(t);
 
-    Matrix<float, DeviceTags::CPU> helper(4, 4);
+    Matrix<float, CheckDevice> helper(4, 4);
     for (size_t i = 0; i < 4; ++i)
     {
         for (size_t j = 0; j < 4; ++j)
@@ -39,13 +40,13 @@ void test_softmax_derivative1()
     }
 
     mSout = GenMatrix<float>(111, 113, 1.1f, 0.0001f);
-    mGrad = Matrix<float, DeviceTags::CPU>(111, 113);
+    mGrad = Matrix<float, CheckDevice>(111, 113);
     mGrad = mGrad.SubMatrix(27, 28, 41, 45);
     mSout = mSout.SubMatrix(17, 18, 31, 35);
     t = RowSoftmaxDerivative(mGrad, mSout);
     t_r = Evaluate(t);
 
-    helper = Matrix<float, DeviceTags::CPU>(4, 4);
+    helper = Matrix<float, CheckDevice>(4, 4);
     for (size_t i = 0; i < 4; ++i)
     {
         for (size_t j = 0; j < 4; ++j)
@@ -76,7 +77,7 @@ void test_softmax_derivative2()
     auto t = ColSoftmaxDerivative(mGrad, mSout);
     auto t_r = Evaluate(t);
 
-    Matrix<float, DeviceTags::CPU> helper(4, 4);
+    Matrix<float, CheckDevice> helper(4, 4);
     for (size_t i = 0; i < 4; ++i)
     {
         for (size_t j = 0; j < 4; ++j)
@@ -98,13 +99,13 @@ void test_softmax_derivative2()
     }
 
     mSout = GenMatrix<float>(111, 113, 1.1f, 0.0001f);
-    mGrad = Matrix<float, DeviceTags::CPU>(111, 113);
+    mGrad = Matrix<float, CheckDevice>(111, 113);
     mGrad = mGrad.SubMatrix(41, 45, 27, 28);
     mSout = mSout.SubMatrix(31, 35, 17, 18);
     t = ColSoftmaxDerivative(mGrad, mSout);
     t_r = Evaluate(t);
 
-    helper = Matrix<float, DeviceTags::CPU>(4, 4);
+    helper = Matrix<float, CheckDevice>(4, 4);
     for (size_t i = 0; i < 4; ++i)
     {
         for (size_t j = 0; j < 4; ++j)
@@ -152,7 +153,7 @@ void test_softmax_derivative3()
 
         auto handle1 = res.EvalRegister();
         auto handle2 = res2.EvalRegister();
-        EvalPlan<DeviceTags::CPU>::Eval();
+        EvalPlan<CheckDevice>::Eval();
 
         auto cm1 = handle1.Data();
         auto cm2 = handle2.Data();
@@ -180,7 +181,7 @@ void test_softmax_derivative3()
 
         auto handle1 = res.EvalRegister();
         auto handle2 = res2.EvalRegister();
-        EvalPlan<DeviceTags::CPU>::Eval();
+        EvalPlan<CheckDevice>::Eval();
 
         auto cm1 = handle1.Data();
         auto cm2 = handle2.Data();
@@ -206,7 +207,7 @@ void test_softmax_derivative4()
 
         auto layer2Output = layer2.FeedForward(layer2Input).Get<LayerIO>();
 
-        auto layer2GradOutput = layer2.FeedBackward(LayerIO::Create().Set<LayerIO>(0.7f)).Get<CostLayerIn>();
+        auto layer2GradOutput = layer2.FeedBackward(LayerIO::Create().Set<LayerIO>(Scalar<float>(0.7))).Get<CostLayerIn>();
         auto layer1GradOutput = layer1.FeedBackward(LayerIO::Create().Set<LayerIO>(layer2GradOutput)).Get<LayerIO>();
 
         auto check = Evaluate(layer1GradOutput);
@@ -239,7 +240,7 @@ void test_softmax_derivative4()
 
         auto layer2Output = layer2.FeedForward(layer2Input).Get<LayerIO>();
 
-        auto layer2GradOutput = layer2.FeedBackward(LayerIO::Create().Set<LayerIO>(0.7f)).Get<CostLayerIn>();
+        auto layer2GradOutput = layer2.FeedBackward(LayerIO::Create().Set<LayerIO>(Scalar<float>(0.7))).Get<CostLayerIn>();
         auto layer1GradOutput = layer1.FeedBackward(LayerIO::Create().Set<LayerIO>(layer2GradOutput)).Get<LayerIO>();
 
         auto check = Evaluate(layer1GradOutput);
@@ -271,14 +272,14 @@ void test_softmax_derivative5()
         auto layer1Input = LayerIO::Create().Set<LayerIO>(GenMatrix<float>(1, 5, 1, 1));
         auto layer1Output = layer1.FeedForward(layer1Input).Get<LayerIO>();
 
-        auto target = OneHotRowVector<float, DeviceTags::CPU>(5, 3);
+        auto target = OneHotRowVector<float, CheckDevice>(5, 3);
         auto layer2Input = CostLayerIn::Create()
                                        .Set<CostLayerIn>(layer1Output)
                                        .Set<CostLayerLabel>(target);
 
         auto layer2Output = layer2.FeedForward(layer2Input).Get<LayerIO>();
 
-        auto layer2GradOutput = layer2.FeedBackward(LayerIO::Create().Set<LayerIO>(0.7f)).Get<CostLayerIn>();
+        auto layer2GradOutput = layer2.FeedBackward(LayerIO::Create().Set<LayerIO>(Scalar<float>(0.7))).Get<CostLayerIn>();
         auto layer1GradOutput = layer1.FeedBackward(LayerIO::Create().Set<LayerIO>(layer2GradOutput)).Get<LayerIO>();
 
         auto check = Evaluate(layer1GradOutput);
@@ -302,14 +303,14 @@ void test_softmax_derivative5()
         auto layer1Input = LayerIO::Create().Set<LayerIO>(GenMatrix<float>(5, 1, 1, 1));
         auto layer1Output = layer1.FeedForward(layer1Input).Get<LayerIO>();
 
-        auto target = OneHotColVector<float, DeviceTags::CPU>(5, 3);
+        auto target = OneHotColVector<float, CheckDevice>(5, 3);
         auto layer2Input = CostLayerIn::Create()
                                        .Set<CostLayerIn>(layer1Output)
                                        .Set<CostLayerLabel>(target);
 
         auto layer2Output = layer2.FeedForward(layer2Input).Get<LayerIO>();
 
-        auto layer2GradOutput = layer2.FeedBackward(LayerIO::Create().Set<LayerIO>(0.7f)).Get<CostLayerIn>();
+        auto layer2GradOutput = layer2.FeedBackward(LayerIO::Create().Set<LayerIO>(Scalar<float>(0.7))).Get<CostLayerIn>();
         auto layer1GradOutput = layer1.FeedBackward(LayerIO::Create().Set<LayerIO>(layer2GradOutput)).Get<LayerIO>();
 
         auto check = Evaluate(layer1GradOutput);

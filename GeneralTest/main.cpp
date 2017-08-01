@@ -3,7 +3,8 @@
 #include "policies/test_policy_selector.h"
 #include "facilities/test_named_params.h"
 #include "evaluate/test_eval_plan.h"
-#include "data/test_cpu_matrix.h"
+#include "data/test_scalar.h"
+#include "data/test_general_matrix.h"
 #include "data/test_one_hot_vector.h"
 #include "data/test_trival_matrix.h"
 #include "data/test_zero_matrix.h"
@@ -40,17 +41,17 @@
 #include "layers/compose/test_single_layer.h"
 #include "layers/recurrent/test_gru.h"
 
-int main()
+int main(int argc, char **argv)
 {
     test_change_policy();
     test_policy_operations();
     test_policy_selector();
     
     test_named_params();
-    
     test_eval_plan();
     
-    test_cpu_matrix();
+	test_scalar();
+    test_general_matrix();
     test_one_hot_vector();
     test_trival_matrix();
     test_zero_matrix();
@@ -91,4 +92,6 @@ int main()
     test_single_layer();
     
     test_gru();
+	return 0;
 }
+

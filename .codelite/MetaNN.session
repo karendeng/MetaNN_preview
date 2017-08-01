@@ -1,82 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Session Name="/home/liwei/MetaNN/MetaNN_old/MetaNN.workspace">
-  <int Value="7" Name="m_selectedTab"/>
-  <wxString Value="/home/liwei/MetaNN/MetaNN_old/MetaNN.workspace" Name="m_workspaceName"/>
+<Session Name="/home/liwei/MetaNN/MetaNN_new/MetaNN/MetaNN.workspace">
+  <int Value="0" Name="m_selectedTab"/>
+  <wxString Value="/home/liwei/MetaNN/MetaNN_new/MetaNN/MetaNN.workspace" Name="m_workspaceName"/>
   <TabInfoArray Name="TabInfoArray">
     <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/MetaNN/data/batch/general.h" Name="FileName"/>
-      <int Value="0" Name="FirstVisibleLine"/>
-      <int Value="0" Name="CurrentLine"/>
+      <wxString Value="/home/liwei/MetaNN/MetaNN_new/MetaNN/GeneralTest/layers/elementary/test_abs_layer.cpp" Name="FileName"/>
+      <int Value="160" Name="FirstVisibleLine"/>
+      <int Value="172" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
     <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/MetaNN/data/dynamic.h" Name="FileName"/>
-      <int Value="0" Name="FirstVisibleLine"/>
-      <int Value="0" Name="CurrentLine"/>
+      <wxString Value="/home/liwei/MetaNN/MetaNN_new/MetaNN/MetaNN/operators/sign.h" Name="FileName"/>
+      <int Value="72" Name="FirstVisibleLine"/>
+      <int Value="70" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
     <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/MetaNN/data_copy/data_copy.h" Name="FileName"/>
-      <int Value="0" Name="FirstVisibleLine"/>
-      <int Value="0" Name="CurrentLine"/>
+      <wxString Value="/home/liwei/MetaNN/MetaNN_new/MetaNN/GeneralTest/operators/test_sign.cpp" Name="FileName"/>
+      <int Value="11" Name="FirstVisibleLine"/>
+      <int Value="9" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
     <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/MetaNN/facilities/traits.h" Name="FileName"/>
-      <int Value="0" Name="FirstVisibleLine"/>
-      <int Value="0" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-      <IntVector Name="CollapsedFolds"/>
-    </TabInfo>
-    <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/MetaNN/facilities/null_param.h" Name="FileName"/>
-      <int Value="0" Name="FirstVisibleLine"/>
-      <int Value="0" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-      <IntVector Name="CollapsedFolds"/>
-    </TabInfo>
-    <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/MetaNN/facilities/named_params.h" Name="FileName"/>
-      <int Value="0" Name="FirstVisibleLine"/>
-      <int Value="0" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-      <IntVector Name="CollapsedFolds"/>
-    </TabInfo>
-    <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/MetaNN/meta_nn.h" Name="FileName"/>
-      <int Value="4" Name="FirstVisibleLine"/>
-      <int Value="5" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-      <IntVector Name="CollapsedFolds"/>
-    </TabInfo>
-    <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/GeneralTest/main.cpp" Name="FileName"/>
-      <int Value="2" Name="FirstVisibleLine"/>
-      <int Value="13" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-      <IntVector Name="CollapsedFolds"/>
-    </TabInfo>
-    <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/MetaNN/layers/facilities/policies.h" Name="FileName"/>
-      <int Value="0" Name="FirstVisibleLine"/>
-      <int Value="0" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-      <IntVector Name="CollapsedFolds"/>
-    </TabInfo>
-    <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/GeneralTest/evaluate/test_eval_plan.h" Name="FileName"/>
-      <int Value="0" Name="FirstVisibleLine"/>
-      <int Value="0" Name="CurrentLine"/>
-      <wxArrayString Name="Bookmarks"/>
-      <IntVector Name="CollapsedFolds"/>
-    </TabInfo>
-    <TabInfo>
-      <wxString Value="/home/liwei/MetaNN/MetaNN_old/GeneralTest/evaluate/test_eval_plan.cpp" Name="FileName"/>
-      <int Value="0" Name="FirstVisibleLine"/>
-      <int Value="0" Name="CurrentLine"/>
+      <wxString Value="/home/liwei/MetaNN/MetaNN_new/MetaNN/MetaNN/data/matrices/cpu_matrix.h" Name="FileName"/>
+      <int Value="66" Name="FirstVisibleLine"/>
+      <int Value="64" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>

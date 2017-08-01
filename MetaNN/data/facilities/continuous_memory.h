@@ -6,20 +6,21 @@ namespace MetaNN
 template <typename TElem, typename TDevice>
 class ContinuousMemory
 {
+    using StorageType = typename Scalar<TElem, TDevice>::StorageType;
 public:
     explicit ContinuousMemory(size_t p_size)
-        : m_mem(Allocator<TDevice>::template Allocate<TElem>(p_size))
+        : m_mem(Allocator<TDevice>::template Allocate<StorageType>(p_size))
         , m_memStart(m_mem.get())
     {}
 
-    ContinuousMemory(std::shared_ptr<TElem> p_mem, TElem* p_memStart)
+    ContinuousMemory(std::shared_ptr<StorageType> p_mem, StorageType* p_memStart)
         : m_mem(std::move(p_mem))
         , m_memStart(p_memStart)
     {}
 
-    TElem* RawMemory() const { return m_memStart; }
+    auto RawMemory() const { return m_memStart; }
 
-    const std::shared_ptr<TElem> SharedPtr() const
+    const std::shared_ptr<StorageType> SharedPtr() const
     {
         return m_mem;
     }
@@ -40,7 +41,7 @@ public:
     }
 
 private:
-    std::shared_ptr<TElem> m_mem;
-    TElem*                 m_memStart;
+    std::shared_ptr<StorageType> m_mem;
+    StorageType*                 m_memStart;
 };
 }

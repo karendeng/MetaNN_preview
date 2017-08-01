@@ -9,29 +9,47 @@ namespace MetaNN
 template <typename TData>
 class EvalHandle
 {
+    struct DataWithEvalInfo
+    {
+        TData m_data;
+        bool m_eval = false;
+    };
+    
 public:
-    EvalHandle(std::shared_ptr<std::shared_ptr<TData>> data)
-        : m_data(std::move(data))
-    {
-        assert(m_data);
-    }
+    EvalHandle()
+        : m_data(std::make_shared<DataWithEvalInfo>())
+    {}
 
-    TData& Data()
+    bool IsEvaluated() const noexcept
     {
-        if (!(*m_data))
+        return m_data->m_eval;
+    }
+    
+    TData& MutableData()
+    {
+        if (IsEvaluated())
         {
-            throw std::runtime_error("Data is not evaluated yet!");
+            throw std::runtime_error("Data is already evaluated.");
         }
-        return **m_data;
+        return m_data->m_data;
+    }
+    
+    void SetEval()
+    {
+        if (IsEvaluated())
+        {
+            throw std::runtime_error("Data is already evaluated.");
+        }
+        m_data->m_eval = true;
     }
     
     const TData& Data() const
     {
-        if (!(*m_data))
+        if (!IsEvaluated())
         {
-            throw std::runtime_error("Data is not evaluated yet!");
+            throw std::runtime_error("Data is not evaluated.");
         }
-        return **m_data;
+        return m_data->m_data;
     }
     
     const void* DataPtr() const
@@ -42,12 +60,15 @@ public:
     template <typename...TParams>
     void Allocate(TParams&&... params) const
     {
-        assert(!(*m_data));
-        *m_data = std::make_shared<TData>(std::forward<TParams>(params)...);
+        if (IsEvaluated())
+        {
+            throw std::runtime_error("Data is already evaluated.");
+        }
+        m_data->m_data = TData(std::forward<TParams>(params)...);
     }
 
 private:
-    std::shared_ptr<std::shared_ptr<TData>> m_data;
+    std::shared_ptr<DataWithEvalInfo> m_data;
 };
 
 template <typename TData>
